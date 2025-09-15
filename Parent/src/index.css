@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Parent Portal Design System - Optimized for rural school contexts */
+
+@layer base {
+  :root {
+    /* Base colors - Clean and accessible */
+    --background: 248 250 252; /* slate-50 */
+    --foreground: 226 29% 15%; /* Deep navy for excellent readability */
+
+    /* Card system */
+    --card: 0 0% 100%;
+    --card-foreground: 226 29% 15%;
+
+    /* Popover system */
+    --popover: 0 0% 100%;
+    --popover-foreground: 226 29% 15%;
+
+    /* Primary - Educational blue for trust and professionalism */
+    --primary: 217 91% 45%; /* Deep blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 217 91% 60%;
+    --primary-dark: 217 91% 30%;
+
+    /* Secondary - Warm green for positive indicators */
+    --secondary: 158 64% 52%; /* Success green */
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 158 64% 65%;
+
+    /* Accent - Orange for alerts and notifications */
+    --accent: 32 95% 55%; /* Warm orange */
+    --accent-foreground: 0 0% 100%;
+    --accent-light: 32 95% 70%;
+
+    /* Status colors for attendance */
+    --success: 158 64% 52%; /* Present - green */
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%; /* Late - amber */
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 84% 60%; /* Absent - red */
+    --danger-foreground: 0 0% 100%;
+
+    /* Neutral tones */
+    --muted: 215 20% 96%;
+    --muted-foreground: 215 16% 47%;
+    --border: 215 20% 88%;
+    --input: 215 20% 94%;
+    --ring: 217 91% 45%;
+
+    /* Gradients for visual appeal */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 45%) 0%, hsl(217 91% 60%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(158 64% 52%) 0%, hsl(158 64% 65%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(32 95% 55%) 0%, hsl(32 95% 70%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 45%) 0%, hsl(158 64% 52%) 100%);
+    
+    /* Background gradients */
+    --gradient-bg: linear-gradient(180deg, hsl(248 250 252) 0%, hsl(241 245 249) 100%);
+    
+    /* Shadows for depth */
+    --shadow-sm: 0 1px 2px 0 hsl(217 91% 45% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(217 91% 45% / 0.1), 0 2px 4px -2px hsl(217 91% 45% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(217 91% 45% / 0.1), 0 4px 6px -4px hsl(217 91% 45% / 0.1);
+    
+    /* Transitions for smooth interactions */
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.5rem;
+
+    /* Custom transitions */
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    /* Base colors for dark mode */
+    --background: 226 29% 8%; /* Deep navy background */
+    --foreground: 248 250 252; /* Light foreground */
+
+    /* Card system */
+    --card: 226 29% 12%;
+    --card-foreground: 248 250 252;
+
+    /* Popover system */ 
+    --popover: 226 29% 12%;
+    --popover-foreground: 248 250 252;
+
+    /* Primary stays consistent */
+    --primary: 217 91% 55%; /* Lighter blue for dark mode */
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 217 91% 70%;
+    --primary-dark: 217 91% 40%;
+
+    /* Secondary */
+    --secondary: 158 64% 45%; /* Slightly darker green */
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 158 64% 60%;
+
+    /* Accent */
+    --accent: 32 95% 50%; /* Slightly darker orange */
+    --accent-foreground: 0 0% 100%;
+    --accent-light: 32 95% 65%;
+
+    /* Status colors remain mostly the same but slightly adjusted */
+    --success: 158 64% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 42%;
+    --warning-foreground: 0 0% 100%;
+    --danger: 0 84% 55%;
+    --danger-foreground: 0 0% 100%;
+
+    /* Neutral tones for dark mode */
+    --muted: 226 29% 15%;
+    --muted-foreground: 215 20% 70%;
+    --border: 226 29% 18%;
+    --input: 226 29% 15%;
+    --ring: 217 91% 55%;
+
+    /* Gradients for dark mode */
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 55%) 0%, hsl(217 91% 70%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(158 64% 45%) 0%, hsl(158 64% 60%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(32 95% 50%) 0%, hsl(32 95% 65%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(217 91% 55%) 0%, hsl(158 64% 45%) 100%);
+    
+    /* Background gradients for dark mode */
+    --gradient-bg: linear-gradient(180deg, hsl(226 29% 8%) 0%, hsl(226 29% 5%) 100%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

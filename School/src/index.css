@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* School Admin Panel Design System - Educational & Professional Theme */
+
+@layer base {
+  :root {
+    /* Core Layout */
+    --background: 248 250 252;
+    --foreground: 226 232 240;
+    
+    /* Educational Primary - Professional Blue */
+    --primary: 219 84% 65%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 219 84% 95%;
+    
+    /* Educational Secondary - Forest Green */
+    --secondary: 158 64% 52%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-soft: 158 64% 95%;
+    
+    /* Warm Accent - Educational Orange */
+    --accent: 34 89% 65%;
+    --accent-foreground: 0 0% 100%;
+    --accent-soft: 34 89% 95%;
+    
+    /* Alert Colors */
+    --warning: 45 93% 58%;
+    --warning-foreground: 0 0% 100%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Neutral Palette */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 219 84% 65%;
+    
+    /* Educational Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(219 84% 65%), hsl(219 84% 75%));
+    --gradient-secondary: linear-gradient(135deg, hsl(158 64% 52%), hsl(158 64% 62%));
+    --gradient-warm: linear-gradient(135deg, hsl(34 89% 65%), hsl(45 93% 58%));
+    --gradient-hero: linear-gradient(135deg, hsl(219 84% 65%), hsl(158 64% 52%));
+    
+    /* Shadows & Effects */
+    --shadow-soft: 0 4px 6px -1px hsl(219 84% 65% / 0.1);
+    --shadow-medium: 0 10px 15px -3px hsl(219 84% 65% / 0.1);
+    --shadow-strong: 0 25px 50px -12px hsl(219 84% 65% / 0.25);
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Sidebar */
+    --sidebar-background: 219 84% 65%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 219 84% 65%;
+    --sidebar-accent: 219 84% 70%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 219 84% 60%;
+    --sidebar-ring: 0 0% 100%;
+
+    --radius: 0.5rem;
+  }
+  
+  .dark {
+    /* Dark mode for rural schools with power-saving needs */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --primary: 219 84% 75%;
+    --secondary: 158 64% 62%;
+    --accent: 34 89% 75%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-card-foreground font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Educational Component Utilities */
+  .glass-effect {
+    @apply bg-white/10 backdrop-blur-sm border border-white/20;
+  }
+  
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+  
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  
+  .shadow-educational {
+    box-shadow: var(--shadow-medium);
+  }
+  
+  .transition-educational {
+    transition: var(--transition-smooth);
+  }
+  
+  /* Dashboard Cards */
+  .dashboard-card {
+    @apply bg-card border border-border rounded-lg p-6 shadow-educational transition-educational hover:shadow-lg;
+  }
+  
+  .metric-card {
+    @apply dashboard-card hover:scale-[1.02] cursor-pointer;
+  }
+}
