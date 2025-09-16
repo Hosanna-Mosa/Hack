@@ -39,28 +39,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // API routes
 app.use('/api', routes);
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'School Attendance Management System API',
-    version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      auth: '/api/auth',
-      students: '/api/students',
-      attendance: '/api/attendance'
-    }
-  });
-});
+// Root route via controller
+const { root, notFound } = require('./controllers/healthController');
+app.get('/', root);
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
+// 404 handler via controller
+app.use('*', notFound);
 
 // Error handling middleware
 app.use(errorHandler);
