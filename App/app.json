@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Hack",
+    "slug": "hack",
+    "version": "1.0.0",
+    "scheme": "hack",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-router"
+    ],
+    "android": {
+      "package": "com.anonymous.hack"
+    },
+    "ios": {
+      "bundleIdentifier": "com.anonymous.hack"
+    }
+  }
+}
