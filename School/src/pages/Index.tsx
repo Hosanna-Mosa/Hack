@@ -1,15 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Students from "./Students";
 import ClassesPage from "./Classes";
+import { TeacherManagement } from "@/components/teachers/TeacherManagement";
+import { apiRequest } from "@/lib/utils";
 
 const Index = () => {
   const [user, setUser] = useState<{name: string; email: string; role: string} | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const me = await apiRequest<{ success: boolean; user: any }>("/auth/me");
+        if (me?.user) {
+          const u = me.user;
+          setUser({
+            name: u.profile?.name || u.username?.split('@')[0] || 'User',
+            email: u.profile?.contact?.email || u.username,
+            role: u.role
+          });
+          try { localStorage.setItem('user', JSON.stringify(u)); } catch {}
+        }
+      } catch {}
+    };
+    load();
+  }, []);
   // Index page now assumes authenticated; App.tsx handles login routing
   const handleLogout = () => {
     setUser(null);
+    try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch {}
     window.location.href = "/login";
   };
 
@@ -20,7 +41,7 @@ const Index = () => {
         <Route path="/students" element={<Students />} />
         <Route path="/attendance" element={<div className="p-8 text-center text-muted-foreground">Attendance management coming soon...</div>} />
         <Route path="/classes" element={<ClassesPage />} />
-        <Route path="/teachers" element={<div className="p-8 text-center text-muted-foreground">Teacher management coming soon...</div>} />
+        <Route path="/teachers" element={<TeacherManagement />} />
         <Route path="/reports" element={<div className="p-8 text-center text-muted-foreground">Reports & analytics coming soon...</div>} />
         <Route path="/communication" element={<div className="p-8 text-center text-muted-foreground">Communication hub coming soon...</div>} />
         <Route path="/notifications" element={<div className="p-8 text-center text-muted-foreground">Notifications management coming soon...</div>} />

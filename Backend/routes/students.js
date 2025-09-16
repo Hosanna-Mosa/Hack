@@ -25,8 +25,10 @@ router.get('/:id', [
 router.post('/', [
   body('studentId').notEmpty().withMessage('Student ID is required'),
   body('name').notEmpty().withMessage('Name is required'),
-  body('classId').isMongoId().withMessage('Valid class ID is required'),
-  body('parentIds').isArray({ min: 1 }).withMessage('At least one parent is required'),
+  // classId removed from required fields; student can be created unassigned
+  // allow either parentIds or parents array to be provided; both optional here
+  body('parentIds').optional().isArray().withMessage('parentIds must be an array'),
+  body('parents').optional().isArray().withMessage('parents must be an array'),
   body('dateOfBirth').isISO8601().withMessage('Valid date of birth is required'),
   handleValidationErrors
 ], auth, authorize('admin', 'teacher'), studentController.createStudent);

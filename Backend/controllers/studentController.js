@@ -1,13 +1,17 @@
 const Student = require('../models/Student');
+const Parent = require('../models/Parent');
+const School = require('../models/School');
+const Teacher = require('../models/Teacher');
 
 // Get students with filters and pagination
 exports.getStudents = async (req, res, next) => {
   try {
-    const { classId, status, page = 1, limit = 10 } = req.query;
+    const { classId, status, schoolId, page = 1, limit = 10 } = req.query;
     const query = {};
 
     if (classId) query.classId = classId;
     if (status) query.status = status;
+    if (schoolId) query.schoolId = schoolId;
 
     const students = await Student.find(query)
       .populate('classId', 'name grade section')
@@ -52,8 +56,41 @@ exports.getStudentById = async (req, res, next) => {
 // Create student
 exports.createStudent = async (req, res, next) => {
   try {
-    const student = new Student(req.body);
+    const { parents, ...studentPayload } = req.body;
+
+    // Attach schoolId automatically if not provided
+    if (!studentPayload.schoolId) {
+      try {
+        let resolvedSchoolId = null;
+        if (req.user?.role === 'admin') {
+          const s = await School.findOne({ adminIds: req.user._id }).select('_id');
+          resolvedSchoolId = s?._id || null;
+        } else if (req.user?.role === 'teacher') {
+          const t = await Teacher.findOne({ userId: req.user._id }).select('schoolId');
+          resolvedSchoolId = t?.schoolId || null;
+        }
+        if (resolvedSchoolId) studentPayload.schoolId = resolvedSchoolId;
+      } catch {}
+    }
+
+    const student = new Student({ ...studentPayload, classId: studentPayload.classId || null });
     await student.save();
+
+    // Optionally create parent records based on provided details
+    if (Array.isArray(parents) && parents.length > 0) {
+      const parentDocs = await Parent.insertMany(parents.map(p => ({
+        name: p.name,
+        email: p.email || null,
+        mobile: p.mobile,
+        password: p.password || 'parent123',
+        studentIds: [student._id]
+      })));
+      // store parent ids back to student if schema expects parentIds
+      try {
+        student.parentIds = parentDocs.map(pd => pd._id);
+        await student.save();
+      } catch {}
+    }
 
     const populatedStudent = await Student.findById(student._id)
       .populate('classId', 'name grade section')
