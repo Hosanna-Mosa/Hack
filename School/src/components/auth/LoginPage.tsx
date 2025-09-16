@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { GraduationCap, Lock, User, Eye, EyeOff } from "lucide-react";
 import { apiRequest } from "@/lib/utils";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface LoginPageProps {
   onLogin: (email: string, password: string, role: string, token?: string) => void;
@@ -28,6 +29,9 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
     contactInfo: { phone: "", email: "", website: "" }
   });
 
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -42,7 +46,7 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
             contact: { email }
           }
         };
-        if ((role === "admin" || role === "staff") && schoolForm.name) {
+        if (role === "admin" && schoolForm.name) {
           payload.school = {
             name: schoolForm.name,
             address: {
@@ -59,11 +63,18 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
             }
           };
         }
+        if (role === "teacher" && schoolForm.name && schoolForm.contactInfo.email) {
+          payload.school = {
+            name: schoolForm.name,
+            email: schoolForm.contactInfo.email,
+          };
+        }
         const res = await apiRequest<{ success: boolean; token: string; user: any }>(
           "/auth/register",
           { method: "POST", body: JSON.stringify(payload) }
         );
-        onLogin(email, password, role, res.token);
+        toast({ title: "Account created", description: "Please sign in to continue." });
+        navigate("/login", { replace: true });
       } else {
         const payload = { username: email, password };
         const res = await apiRequest<{ success: boolean; token: string; user: any }>(
@@ -72,9 +83,15 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
         );
         const mappedRole = res.user?.role === "admin" ? "staff" : res.user?.role || role;
         onLogin(email, password, mappedRole, res.token);
+        try {
+          localStorage.setItem('token', res.token);
+          localStorage.setItem('user', JSON.stringify(res.user || {}));
+        } catch {}
+        toast({ title: "Welcome back", description: "Signed in successfully." });
+        navigate("/", { replace: true });
       }
     } catch (err: any) {
-      alert(err.message || "Authentication failed");
+      toast({ title: "Action failed", description: err.message || "Authentication failed" });
     } finally {
       setIsLoading(false);
     }
@@ -165,16 +182,39 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
               >
                 <option value="admin">Administrator</option>
                 <option value="teacher">Teacher</option>
-                <option value="staff">Staff Member</option>
               </select>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full gradient-primary text-white font-medium py-6 text-base"
+            {isSignup && role === "teacher" && (
+              <div className="space-y-2">
+                <Label htmlFor="schoolName">School Name</Label>
+                <Input id="schoolName" placeholder="Enter your school's name" value={schoolForm.name}
+                  onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })} />
+                <Label htmlFor="schoolEmail">School Email</Label>
+                <Input id="schoolEmail" type="email" placeholder="contact@school.edu" value={schoolForm.contactInfo.email}
+                  onChange={(e) => setSchoolForm({ ...schoolForm, contactInfo: { ...schoolForm.contactInfo, email: e.target.value } })} />
+                <p className="text-xs text-muted-foreground">We’ll verify the school using the official email.</p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className={`w-full text-white font-medium py-6 text-base ${isLoading ? "bg-muted cursor-not-allowed" : "gradient-primary"}`}
               disabled={isLoading}
             >
-              {isLoading ? (isSignup ? "Creating Account..." : "Signing In...") : (isSignup ? "Create Account" : "Sign In")}
+              {isLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  {isSignup ? "Creating Account..." : "Signing In..."}
+                </span>
+              ) : isSignup ? (
+                "Create Account"
+              ) : (
+                "Sign In"
+              )}
             </Button>
             {isSignup && (role === "admin" || role === "staff") && (
               <div className="text-center">

@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const School = require('../models/School');
+const Teacher = require('../models/Teacher');
 
 const signToken = (user) => {
   const secret = process.env.JWT_SECRET || 'dev_default_jwt_secret_change_me';
@@ -59,6 +60,30 @@ exports.register = async (req, res, next) => {
       await newSchool.save();
     }
 
+    // If role is teacher, verify school identity by name and an email match
+    if (role === 'teacher') {
+      const schoolName = school?.name?.trim();
+      const schoolEmail = school?.email?.trim().toLowerCase();
+      if (!schoolName || !schoolEmail) {
+        return res.status(400).json({ success: false, message: 'School name and email are required for teacher registration' });
+      }
+
+      const candidateSchool = await School.findOne({
+        name: new RegExp(`^${schoolName}$`, 'i'),
+        contactInfo: { $exists: true },
+        isActive: true
+      });
+
+      const emails = candidateSchool?.contactInfo?.email || [];
+      const match = Array.isArray(emails) && emails.map(e => String(e).toLowerCase()).includes(schoolEmail);
+      if (!candidateSchool || !match) {
+        return res.status(404).json({ success: false, message: 'School details did not match our records' });
+      }
+
+      const teacher = new Teacher({ userId: user._id, schoolId: candidateSchool._id });
+      await teacher.save();
+    }
+
     const token = signToken(user);
 
     res.status(201).json({
@@ -88,7 +113,17 @@ exports.login = async (req, res, next) => {
 
     const token = signToken(user);
 
-    res.json({ success: true, token, user: user.toJSON() });
+    // Attach schoolId for convenience on frontend
+    let schoolId = null;
+    if (user.role === 'admin') {
+      const school = await School.findOne({ adminIds: user._id }).select('_id');
+      schoolId = school?._id || null;
+    } else if (user.role === 'teacher') {
+      const teacher = await (await require('../models/Teacher').findOne({ userId: user._id }).select('schoolId'));
+      schoolId = teacher?.schoolId || null;
+    }
+
+    res.json({ success: true, token, user: { ...user.toJSON(), schoolId } });
   } catch (error) {
     next(error);
   }

@@ -13,6 +13,7 @@ import {
   BookOpen,
   GraduationCap
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Mock data - in real app this would come from backend
 const dashboardData = {
@@ -44,6 +45,7 @@ const dashboardData = {
 export function Dashboard() {
   const { todayAttendance, weeklyStats, alerts, recentActivity } = dashboardData;
   const attendanceRate = (todayAttendance.present / todayAttendance.total * 100).toFixed(1);
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-6">
@@ -235,7 +237,7 @@ export function Dashboard() {
               <UserCheck className="w-6 h-6" />
               <span className="text-sm">Mark Attendance</span>
             </Button>
-            <Button className="h-20 flex-col gap-2" variant="outline">
+            <Button className="h-20 flex-col gap-2" variant="outline" onClick={() => navigate('/classes')}>
               <BookOpen className="w-6 h-6" />
               <span className="text-sm">Create Class</span>
             </Button>
