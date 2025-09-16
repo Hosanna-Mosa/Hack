@@ -7,7 +7,7 @@
 @layer base {
   :root {
     /* Base colors - Clean and accessible */
-    --background: 248 250 252; /* slate-50 */
+    --background: 0 0% 100%; /* force pure white */
     --foreground: 226 29% 15%; /* Deep navy for excellent readability */
 
     /* Card system */
@@ -37,8 +37,8 @@
     /* Status colors for attendance */
     --success: 158 64% 52%; /* Present - green */
     --success-foreground: 0 0% 100%;
-    --warning: 45 93% 47%; /* Late - amber */
-    --warning-foreground: 0 0% 100%;
+    --warning: 0 0% 100%; /* Replaced yellow with white */
+    --warning-foreground: 226 29% 15%;
     --danger: 0 84% 60%; /* Absent - red */
     --danger-foreground: 0 0% 100%;
 
@@ -56,7 +56,7 @@
     --gradient-hero: linear-gradient(135deg, hsl(217 91% 45%) 0%, hsl(158 64% 52%) 100%);
     
     /* Background gradients */
-    --gradient-bg: linear-gradient(180deg, hsl(248 250 252) 0%, hsl(241 245 249) 100%);
+    --gradient-bg: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 100%) 100%);
     
     /* Shadows for depth */
     --shadow-sm: 0 1px 2px 0 hsl(217 91% 45% / 0.05);
@@ -106,8 +106,8 @@
     /* Status colors remain mostly the same but slightly adjusted */
     --success: 158 64% 45%;
     --success-foreground: 0 0% 100%;
-    --warning: 45 93% 42%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 0 0% 100%;
+    --warning-foreground: 226 29% 15%;
     --danger: 0 84% 55%;
     --danger-foreground: 0 0% 100%;
 
