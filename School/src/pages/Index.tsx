@@ -1,32 +1,16 @@
 import { useState } from "react";
-import { LoginPage } from "@/components/auth/LoginPage";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Students from "./Students";
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<{name: string; email: string; role: string} | null>(null);
-
-  const handleLogin = (email: string, password: string, role: string) => {
-    // Mock authentication - in real app this would call backend
-    setUser({
-      name: email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      email,
-      role
-    });
-    setIsAuthenticated(true);
-  };
-
+  // Index page now assumes authenticated; App.tsx handles login routing
   const handleLogout = () => {
-    setIsAuthenticated(false);
     setUser(null);
+    window.location.href = "/login";
   };
-
-  if (!isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
 
   return (
     <MainLayout user={user || undefined} onLogout={handleLogout}>

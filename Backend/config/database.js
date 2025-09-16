@@ -1,15 +1,18 @@
 const mongoose = require('mongoose');
 
+// Prefer env var, fallback to current hardcoded URI for now
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://sunandvemavarapu_db_user:wqr25yDcKahqsueS@attedence.mlkqvap.mongodb.net/";
+
+// Reduce Mongoose internal debug noise
+mongoose.set('debug', false);
+
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    const connection = await mongoose.connect(MONGODB_URI);
+    const host = connection.connection.host;
+    console.log(`MongoDB connected (${host})`);
   } catch (error) {
-    console.error('Database connection error:', error);
+    console.error('MongoDB connection failed');
     process.exit(1);
   }
 };

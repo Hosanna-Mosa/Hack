@@ -84,7 +84,6 @@ const classSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
-classSchema.index({ name: 1, schoolId: 1 });
 classSchema.index({ schoolId: 1 });
 classSchema.index({ teacherIds: 1 });
 classSchema.index({ studentIds: 1 });
@@ -126,7 +125,7 @@ classSchema.virtual('currentTeacherCount').get(function() {
 classSchema.set('toJSON', { virtuals: true });
 classSchema.set('toObject', { virtuals: true });
 
-// Compound unique index for class name and school
+// Compound unique index for class name and school (single definition)
 classSchema.index({ name: 1, schoolId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Class', classSchema);

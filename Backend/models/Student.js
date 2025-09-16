@@ -99,13 +99,10 @@ const studentSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
-studentSchema.index({ studentId: 1 });
+// Indexes for better query performance (non-duplicate with schema unique fields)
 studentSchema.index({ classId: 1 });
 studentSchema.index({ parentIds: 1 });
-studentSchema.index({ rfidTag: 1 });
 studentSchema.index({ status: 1 });
-studentSchema.index({ 'academicInfo.admissionNumber': 1 });
 
 // Virtual to populate class data
 studentSchema.virtual('class', {
