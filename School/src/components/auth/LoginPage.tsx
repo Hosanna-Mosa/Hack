@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { GraduationCap, Lock, User, Eye, EyeOff } from "lucide-react";
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string, role: string) => void;
+  onLogin: (email: string, password: string, role: string) => Promise<void> | void;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -19,12 +19,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate authentication delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    onLogin(email, password, role);
-    setIsLoading(false);
+    try {
+      await onLogin(email, password, role);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const demoAccounts = [

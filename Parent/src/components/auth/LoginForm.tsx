@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, School, Lock, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/parent-portal-hero.jpg";
 
 interface LoginFormProps {
-  onLogin: (credentials: { email: string; password: string }) => void;
+  onLogin: (credentials: { email: string; password: string }) => Promise<void> | void;
   isLoading?: boolean;
 }
 
@@ -17,10 +18,11 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
         title: "Missing Information",
@@ -30,7 +32,15 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
       return;
     }
 
-    onLogin({ email, password });
+    try {
+      await onLogin({ email, password });
+    } catch (err: any) {
+      toast({
+        title: "Sign In Failed",
+        description: err?.message || "Invalid credentials.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -139,6 +149,16 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
                 >
                   Forgot your password?
                 </button>
+                <div className="mt-2 text-sm">
+                  <span className="text-muted-foreground">New here? </span>
+                  <button
+                    type="button"
+                    className="text-primary hover:text-primary-dark transition-colors"
+                    onClick={() => navigate('/signup')}
+                  >
+                    Create an account
+                  </button>
+                </div>
               </div>
             </form>
           </CardContent>

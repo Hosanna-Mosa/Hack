@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { LoginForm } from "./auth/LoginForm";
 import { ParentDashboard } from "./dashboard/ParentDashboard";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/utils";
 
 interface User {
-  id: string;
-  email: string;
-  name: string;
+  _id: string;
+  username: string;
+  role: string;
+  profile?: { name?: string; contact?: { email?: string } };
 }
 
 export function ParentPortalApp() {
@@ -36,35 +38,30 @@ export function ParentPortalApp() {
 
   const handleLogin = async (credentials: { email: string; password: string }) => {
     setIsLoading(true);
-    
     try {
-      // Simulate API call - in real app, this would be an actual authentication API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock authentication logic
-      if (credentials.email && credentials.password) {
-        const mockUser: User = {
-          id: "1",
-          email: credentials.email,
-          name: "Sarah Johnson" // Mock parent name
-        };
-        
-        setUser(mockUser);
-        localStorage.setItem("parentPortalUser", JSON.stringify(mockUser));
-        
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in to the Parent Portal.",
-        });
-      } else {
-        throw new Error("Invalid credentials");
-      }
-    } catch (error) {
+      const resp = await apiRequest<{ success: boolean; token: string; user: User }>(
+        "/auth/login",
+        {
+          method: "POST",
+          body: JSON.stringify({ username: credentials.email, password: credentials.password })
+        }
+      );
+
+      localStorage.setItem("authToken", resp.token);
+      setUser(resp.user);
+      localStorage.setItem("parentPortalUser", JSON.stringify(resp.user));
+
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in to the Parent Portal.",
+      });
+    } catch (error: any) {
       toast({
         title: "Sign In Failed",
-        description: "Please check your email and password and try again.",
+        description: error?.message || "Please check your email and password and try again.",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +70,7 @@ export function ParentPortalApp() {
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem("parentPortalUser");
+    localStorage.removeItem("authToken");
     
     toast({
       title: "Signed Out",

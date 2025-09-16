@@ -12,7 +12,6 @@ const userSchema = new mongoose.Schema({
   },
   passwordHash: {
     type: String,
-    required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
   role: {
@@ -53,10 +52,7 @@ const userSchema = new mongoose.Schema({
   },
   linkedTeacherId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Teacher',
-    required: function() {
-      return this.role === 'parent';
-    }
+    ref: 'Teacher'
   },
   linkedStudentIds: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -82,19 +78,21 @@ userSchema.virtual('password')
     this._password = password;
   });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('passwordHash') && !this._password) {
+// Ensure hashing occurs before validation and require password on create
+userSchema.pre('validate', async function(next) {
+  try {
+    if (this._password) {
+      const salt = await bcrypt.genSalt(12);
+      this.passwordHash = await bcrypt.hash(this._password, salt);
+      this._password = undefined;
+    }
+    if (this.isNew && !this.passwordHash) {
+      return next(new Error('Password is required'));
+    }
     return next();
+  } catch (err) {
+    return next(err);
   }
-  
-  if (this._password) {
-    const salt = await bcrypt.genSalt(12);
-    this.passwordHash = await bcrypt.hash(this._password, salt);
-    this._password = undefined;
-  }
-  
-  next();
 });
 
 // Compare password method
