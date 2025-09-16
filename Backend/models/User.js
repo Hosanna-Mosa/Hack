@@ -70,9 +70,7 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for better query performance
-userSchema.index({ username: 1 });
-userSchema.index({ 'profile.contact.email': 1 });
+// Index for better query performance (avoid duplicates with unique fields)
 userSchema.index({ role: 1 });
 userSchema.index({ linkedTeacherId: 1 });
 

@@ -10,6 +10,16 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// Optional quiet mode to suppress noisy startup logs and warnings
+const QUIET_STARTUP = String(process.env.QUIET_STARTUP || '').toLowerCase() === 'true';
+if (QUIET_STARTUP) {
+  // Suppress Node process warnings
+  process.on('warning', () => {});
+  // Suppress info/warn chatter from dependencies (keep error and log)
+  console.info = () => {};
+  console.warn = () => {};
+}
+
 // Connect to database
 connectDB();
 
@@ -18,18 +28,26 @@ app.use(helmet());
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: [
+    process.env.CORS_ORIGIN || 
+    'http://localhost:5173',
+    'http://localhost:8081',
+    'http://localhost:8080',
+    'http://localhost:3000'
+  ],
   credentials: true
 }));
 
 // Compression middleware
 app.use(compression());
 
-// Logging middleware
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
+// Logging middleware (skip when quiet)
+if (!QUIET_STARTUP) {
+  if (process.env.NODE_ENV === 'development') {
+    app.use(morgan('dev'));
+  } else {
+    app.use(morgan('combined'));
+  }
 }
 
 // Body parsing middleware
@@ -52,12 +70,12 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
-  console.log(`Error: ${err.message}`);
+  if (!QUIET_STARTUP) console.log(`Error: ${err.message}`);
   server.close(() => {
     process.exit(1);
   });
@@ -65,7 +83,7 @@ process.on('unhandledRejection', (err, promise) => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.log(`Error: ${err.message}`);
+  if (!QUIET_STARTUP) console.log(`Error: ${err.message}`);
   process.exit(1);
 });
 
