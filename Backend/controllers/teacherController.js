@@ -15,8 +15,9 @@ const signToken = (user) => {
 // Create a new teacher (admin flow)
 const createTeacher = async (req, res, next) => {
   try {
-    const { name, email, mobile, password, schoolId } = req.body;
-    console.log('CreateTeacher request body:', { name, email, mobile, hasPassword: Boolean(password), schoolId });
+    const { name, email, mobile, schoolId } = req.body;
+    const DEFAULT_TEACHER_PASSWORD = 'Teacher@123';
+    console.log('CreateTeacher request body:', { name, email, mobile, schoolId });
 
     const existingUser = await User.findOne({ 'profile.contact.email': email });
     if (existingUser) {
@@ -43,14 +44,14 @@ const createTeacher = async (req, res, next) => {
     user.passwordHash = await bcrypt.hash('temp123', 12);
     await user.save();
 
-    // Create teacher record with provided phone number and password
+    // Create teacher record with provided phone number and default password
     const normalizedPhone = (mobile || '').replace(/[\s\-\(\)]/g, '');
     const teacher = new Teacher({
       userId: user._id,
       schoolId,
       isActive: true,
       phoneNumber: normalizedPhone,
-      password
+      password: DEFAULT_TEACHER_PASSWORD
     });
     await teacher.save();
 
