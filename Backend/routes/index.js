@@ -4,6 +4,7 @@ const studentRoutes = require('./students');
 const attendanceRoutes = require('./attendance');
 const classRoutes = require('./classes');
 const parentRoutes = require('./parents');
+const schoolRoutes = require('./schools');
 const { health } = require('../controllers/healthController');
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.use('/students', studentRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/classes', classRoutes);
 router.use('/parents', parentRoutes);
+router.use('/schools', schoolRoutes);
 
 module.exports = router;

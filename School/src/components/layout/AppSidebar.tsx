@@ -3,11 +3,8 @@ import {
   Users, 
   UserCheck, 
   ClipboardList, 
-  Settings, 
-  Bell,
   BookOpen,
-  GraduationCap,
-  MessageSquare
+  GraduationCap
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -59,24 +56,6 @@ const menuItems = [
     url: "/reports",
     icon: ClipboardList,
     description: "Analytics & reporting"
-  },
-  {
-    title: "Communication",
-    url: "/communication",
-    icon: MessageSquare,
-    description: "Messages & announcements"
-  },
-  {
-    title: "Notifications",
-    url: "/notifications",
-    icon: Bell,
-    description: "System alerts"
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-    description: "System configuration"
   }
 ];
 
