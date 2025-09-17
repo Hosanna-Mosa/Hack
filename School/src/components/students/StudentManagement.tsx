@@ -116,6 +116,11 @@ export function StudentManagement() {
   const [selectedGrade, setSelectedGrade] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState<any>({ name: "", studentId: "", status: "active" });
   const { toast } = useToast();
   const filteredStudents = students.filter((student: any) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -179,6 +184,7 @@ export function StudentManagement() {
         const path = sid ? `/students?schoolId=${sid}` : `/students`;
         const res = await apiRequest<{ success: boolean; data: any[] }>(path);
         const normalized = (res.data || []).map((s: any) => ({
+          _id: s._id || s.id,
           name: s.name || s.profile?.name || 'Unnamed',
           studentId: s.studentId || '',
           grade: s.classId?.grade ? `Grade ${s.classId.grade}` : (s.classId?.name || 'Unassigned'),
@@ -197,6 +203,79 @@ export function StudentManagement() {
     };
     load();
   }, []);
+
+  const refreshStudents = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const sid = user?.schoolId;
+      const path = sid ? `/students?schoolId=${sid}` : `/students`;
+      const res = await apiRequest<{ success: boolean; data: any[] }>(path);
+      const normalized = (res.data || []).map((s: any) => ({
+        _id: s._id || s.id,
+        name: s.name || s.profile?.name || 'Unnamed',
+        studentId: s.studentId || '',
+        grade: s.classId?.grade ? `Grade ${s.classId.grade}` : (s.classId?.name || 'Unassigned'),
+        section: s.classId?.section || '',
+        email: s.contactInfo?.email || '',
+        guardianName: '',
+        guardianPhone: '',
+        attendanceRate: 0,
+        status: s.isActive ? 'Active' : 'Inactive'
+      }));
+      setStudents(normalized);
+    } catch {}
+  };
+
+  const openView = async (id: string | number) => {
+    try {
+      const res = await apiRequest(`/students/${id}`);
+      setSelectedStudent(res.data);
+      setViewOpen(true);
+    } catch (e: any) {
+      toast({ title: 'Failed to fetch', description: e.message });
+    }
+  };
+
+  const openEdit = async (id: string | number) => {
+    try {
+      const res = await apiRequest(`/students/${id}`);
+      const d: any = res.data;
+      setSelectedStudent(d);
+      setEditForm({ name: d.name || '', studentId: d.studentId || '', status: d.isActive ? 'active' : (d.status || 'inactive') });
+      setEditOpen(true);
+    } catch (e: any) {
+      toast({ title: 'Failed to load student', description: e.message });
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!selectedStudent?._id) { setEditOpen(false); return; }
+    try {
+      await apiRequest(`/students/${selectedStudent._id}`, { method: 'PUT', body: JSON.stringify({ name: editForm.name, studentId: editForm.studentId, status: editForm.status, isActive: editForm.status?.toLowerCase() === 'active' }) });
+      toast({ title: 'Student updated' });
+      setEditOpen(false);
+      refreshStudents();
+    } catch (e: any) {
+      toast({ title: 'Update failed', description: e.message });
+    }
+  };
+
+  const openDelete = (id: string | number) => {
+    setSelectedStudent({ _id: id });
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedStudent?._id) { setDeleteOpen(false); return; }
+    try {
+      await apiRequest(`/students/${selectedStudent._id}`, { method: 'DELETE' });
+      toast({ title: 'Student removed' });
+      setDeleteOpen(false);
+      refreshStudents();
+    } catch (e: any) {
+      toast({ title: 'Delete failed', description: e.message });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -399,7 +478,7 @@ export function StudentManagement() {
               </thead>
               <tbody>
                 {filteredStudents.map((student) => (
-                  <tr key={student.id} className="border-b border-border hover:bg-muted/50 transition-colors">
+                  <tr key={student._id || student.id} className="border-b border-border hover:bg-muted/50 transition-colors">
                     <td className="py-4 px-2">
                       <div>
                         <div className="font-medium">{student.name}</div>
@@ -436,15 +515,15 @@ export function StudentManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2">
+                          <DropdownMenuItem className="gap-2" onClick={() => openView(student._id || student.id)}>
                             <Eye className="w-4 h-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2">
+                          <DropdownMenuItem className="gap-2" onClick={() => openEdit(student._id || student.id)}>
                             <Edit3 className="w-4 h-4" />
                             Edit Student
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2 text-destructive">
+                          <DropdownMenuItem className="gap-2 text-destructive" onClick={() => openDelete(student._id || student.id)}>
                             <Trash2 className="w-4 h-4" />
                             Remove Student
                           </DropdownMenuItem>
@@ -475,6 +554,62 @@ export function StudentManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* View Student Dialog */}
+      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Student Details</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 text-sm">
+            <div className="flex items-center justify-between"><span className="text-muted-foreground">Name</span><span className="font-medium">{selectedStudent?.name || '-'}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted-foreground">ID</span><span className="font-medium">{selectedStudent?.studentId || '-'}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted-foreground">Class</span><span className="font-medium">{selectedStudent?.classId ? `${selectedStudent?.classId?.grade || ''} ${selectedStudent?.classId?.section || ''}` : 'Unassigned'}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted-foreground">Status</span><span className="font-medium">{selectedStudent?.isActive ? 'Active' : (selectedStudent?.status || 'Inactive')}</span></div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Edit Student</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <label className="text-sm">Name</label>
+            <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+            <label className="text-sm">Student ID</label>
+            <Input value={editForm.studentId} onChange={(e) => setEditForm({ ...editForm, studentId: e.target.value })} />
+            <label className="text-sm">Status</label>
+            <select className="border rounded-md p-2" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={saveEdit}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Student Confirm */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Remove Student</DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">This action cannot be undone. The student will be permanently removed.</div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete}>Remove</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
