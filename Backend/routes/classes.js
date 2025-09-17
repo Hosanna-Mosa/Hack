@@ -82,6 +82,9 @@ router.post('/:id/assign-students', [
     }
 });
 
+// GET /api/classes/:id/students
+router.get('/:id/students', [
+    param('id').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid class id required'),
 
     validate
 ], async (req, res, next) => {
