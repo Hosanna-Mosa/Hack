@@ -23,6 +23,7 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
   const [isSignup, setIsSignup] = useState(Boolean(startOnSignup));
   const [name, setName] = useState("");
   const [schoolOpen, setSchoolOpen] = useState(false);
+  const [schoolAdded, setSchoolAdded] = useState(false);
   const [schoolForm, setSchoolForm] = useState({
     name: "",
     address: { street: "", city: "", state: "", zipCode: "", country: "India" },
@@ -31,6 +32,11 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Reset schoolAdded when role changes or switching between signup/login
+  useEffect(() => {
+    setSchoolAdded(false);
+  }, [role, isSignup]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,12 +69,6 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
             }
           };
         }
-        if (role === "teacher" && schoolForm.name && schoolForm.contactInfo.email) {
-          payload.school = {
-            name: schoolForm.name,
-            email: schoolForm.contactInfo.email,
-          };
-        }
         const res = await apiRequest<{ success: boolean; token: string; user: any }>(
           "/auth/register",
           { method: "POST", body: JSON.stringify(payload) }
@@ -76,7 +76,7 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
         toast({ title: "Account created", description: "Please sign in to continue." });
         navigate("/login", { replace: true });
       } else {
-        const payload = { username: email, password };
+        const payload = { username: email, password, role };
         const res = await apiRequest<{ success: boolean; token: string; user: any }>(
           "/auth/login",
           { method: "POST", body: JSON.stringify(payload) }
@@ -99,8 +99,7 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
 
   const demoAccounts = [
     { role: "admin", email: "admin@school.edu", label: "Administrator" },
-    { role: "teacher", email: "teacher@school.edu", label: "Teacher" },
-    { role: "staff", email: "staff@school.edu", label: "Staff Member" }
+    { role: "teacher", email: "teacher@school.edu", label: "Teacher" }
   ];
 
   return (
@@ -181,46 +180,18 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
                 className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
               >
                 <option value="admin">Administrator</option>
-                <option value="teacher">Teacher</option>
+                {!isSignup && <option value="teacher">Teacher</option>}
               </select>
             </div>
 
-            {isSignup && role === "teacher" && (
-              <div className="space-y-2">
-                <Label htmlFor="schoolName">School Name</Label>
-                <Input id="schoolName" placeholder="Enter your school's name" value={schoolForm.name}
-                  onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })} />
-                <Label htmlFor="schoolEmail">School Email</Label>
-                <Input id="schoolEmail" type="email" placeholder="contact@school.edu" value={schoolForm.contactInfo.email}
-                  onChange={(e) => setSchoolForm({ ...schoolForm, contactInfo: { ...schoolForm.contactInfo, email: e.target.value } })} />
-                <p className="text-xs text-muted-foreground">We’ll verify the school using the official email.</p>
-              </div>
-            )}
 
-            <Button
-              type="submit"
-              className={`w-full text-white font-medium py-6 text-base ${isLoading ? "bg-muted cursor-not-allowed" : "gradient-primary"}`}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <span className="inline-flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
-                  {isSignup ? "Creating Account..." : "Signing In..."}
-                </span>
-              ) : isSignup ? (
-                "Create Account"
-              ) : (
-                "Sign In"
-              )}
-            </Button>
-            {isSignup && (role === "admin" || role === "staff") && (
+            {isSignup && role === "admin" && (
               <div className="text-center">
                 <Dialog open={schoolOpen} onOpenChange={setSchoolOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" type="button" className="mt-2">Add New School</Button>
+                    <Button variant="outline" type="button" className="w-full mb-4">
+                      {schoolAdded ? "✓ School Added" : "Add New School"}
+                    </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[520px]">
                     <DialogHeader>
@@ -273,13 +244,37 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
                           alert("Please fill required fields: name, city, state");
                           return;
                         }
+                        setSchoolAdded(true);
                         setSchoolOpen(false);
+                        toast({ title: "School Added", description: "You can now create your account." });
                       }}>Save School</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>
             )}
+
+            <Button
+              type="submit"
+              className={`w-full text-white font-medium py-6 text-base ${isLoading || (isSignup && role === "admin" && !schoolAdded) ? "bg-muted cursor-not-allowed" : "gradient-primary"}`}
+              disabled={isLoading || (isSignup && role === "admin" && !schoolAdded)}
+            >
+              {isLoading ? (
+                <span className="inline-flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                  </svg>
+                  {isSignup ? "Creating Account..." : "Signing In..."}
+                </span>
+              ) : isSignup && role === "admin" && !schoolAdded ? (
+                "Add School First"
+              ) : isSignup ? (
+                "Create Account"
+              ) : (
+                "Sign In"
+              )}
+            </Button>
             <div className="text-center text-sm">
               {isSignup ? (
                 <Link to="/login" className="text-primary underline" onClick={() => setIsSignup(false)}>
@@ -298,7 +293,7 @@ export function LoginPage({ onLogin, startOnSignup }: LoginPageProps) {
               Quick Demo Access
             </div>
             <div className="grid gap-2">
-              {demoAccounts.map((account) => (
+              {demoAccounts.filter(account => isSignup ? account.role === "admin" : true).map((account) => (
                 <Button
                   key={account.role}
                   variant="outline"

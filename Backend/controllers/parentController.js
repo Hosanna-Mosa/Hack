@@ -18,6 +18,8 @@ const signToken = (parent) => {
 exports.login = async (req, res, next) => {
   try {
     const { mobile, password } = req.body;
+    console.log(mobile, password);
+    
 
     if (!mobile || !password) {
       return res.status(400).json({ 

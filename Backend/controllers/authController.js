@@ -99,7 +99,7 @@ exports.register = async (req, res, next) => {
 // Login existing user
 exports.login = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, role } = req.body;
 
     const user = await User.findOne({ username });
     if (!user) {
@@ -109,6 +109,14 @@ exports.login = async (req, res, next) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // Check if the selected role matches the user's actual role
+    if (role && role !== user.role) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Please select the correct role. Your account is registered as ${user.role === 'admin' ? 'Administrator' : user.role === 'teacher' ? 'Teacher' : user.role}.` 
+      });
     }
 
     const token = signToken(user);
