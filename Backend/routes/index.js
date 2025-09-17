@@ -21,5 +21,6 @@ router.use('/classes', classRoutes);
 router.use('/parents', parentRoutes);
 router.use('/schools', schoolRoutes);
 router.use('/teachers', teacherRoutes);
+router.use('/embeddings', require('./embeddings'));
 
 module.exports = router;
