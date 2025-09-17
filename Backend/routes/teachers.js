@@ -20,7 +20,6 @@ router.post('/', [
   body('name').notEmpty().withMessage('Teacher name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('mobile').notEmpty().withMessage('Mobile number is required').isLength({ min: 10, max: 15 }).withMessage('Mobile number must be between 10 and 15 characters'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('schoolId').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid schoolId is required'),
   validate
 ], teacherController.createTeacher);

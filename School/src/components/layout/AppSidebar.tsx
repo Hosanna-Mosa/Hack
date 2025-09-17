@@ -77,7 +77,7 @@ export function AppSidebar() {
   };
 
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg transition-educational text-sm ${
+    `flex items-start gap-3 px-3 py-3 h-auto rounded-lg transition-educational text-sm leading-snug ${
       isActive 
         ? "bg-sidebar-primary text-sidebar-primary-foreground font-medium" 
         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -105,10 +105,10 @@ export function AppSidebar() {
             Main Menu
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className="space-y-2">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild size="lg">
                     <NavLink 
                       to={item.url} 
                       className={getNavClass({ isActive: isActive(item.url) })}

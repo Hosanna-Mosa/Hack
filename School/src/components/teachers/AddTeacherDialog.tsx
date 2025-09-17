@@ -25,15 +25,14 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    mobile: "",
-    password: ""
+    mobile: ""
   });
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.mobile || !formData.password) {
+    if (!formData.name || !formData.email || !formData.mobile) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -57,7 +56,6 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
           name: formData.name,
           email: formData.email,
           mobile: formData.mobile,
-          password: formData.password,
           schoolId
         })
       });
@@ -68,7 +66,7 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
       });
 
       // Reset form and close dialog
-      setFormData({ name: "", email: "", mobile: "", password: "" });
+      setFormData({ name: "", email: "", mobile: "" });
       setOpen(false);
       onTeacherAdded();
     } catch (error: any) {
@@ -138,17 +136,7 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
                 required
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Set a temporary password (min 6 chars)"
-                required
-              />
-            </div>
+            {/* Password field removed; backend applies default password */}
           </div>
           <DialogFooter>
             <Button
