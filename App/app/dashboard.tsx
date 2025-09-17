@@ -1,13 +1,35 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useRef, useEffect } from 'react';
-import { Text, TouchableOpacity, View, SafeAreaView, Animated, ScrollView, StyleSheet } from 'react-native';
-import { ShoppingBag, Heart, Search, Bell, User, TrendingUp, Star, Package, LogOut } from 'lucide-react-native';
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import React, { useRef, useEffect } from "react";
+import {
+  Text,
+  TouchableOpacity,
+  View,
+  SafeAreaView,
+  Animated,
+  ScrollView,
+  StyleSheet,
+} from "react-native";
+import {
+  BookOpen,
+  Users,
+  Calendar,
+  Bell,
+  User,
+  TrendingUp,
+  Star,
+  CheckCircle,
+  LogOut,
+} from "lucide-react-native";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function DashboardScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
+
+  const { state, logout } = useAuth();
+  const { user } = state;
 
   useEffect(() => {
     Animated.parallel([
@@ -29,39 +51,55 @@ export default function DashboardScreen() {
     ]).start();
   }, [fadeAnim, slideAnim, scaleAnim]);
 
-  const handleLogout = () => {
-    router.replace('/');
+  const handleLogout = async () => {
+    await logout();
+    router.replace("/login");
   };
 
   const quickActions = [
-    { icon: ShoppingBag, label: 'Shop Now', color: '#667eea', bgColor: '#e0e7ff' },
-    { icon: Heart, label: 'Wishlist', color: '#ef4444', bgColor: '#fef2f2' },
-    { icon: Package, label: 'Orders', color: '#f59e0b', bgColor: '#fef3c7' },
-    { icon: Search, label: 'Search', color: '#10b981', bgColor: '#d1fae5' },
+    {
+      icon: Calendar,
+      label: "Mark Attendance",
+      color: "#667eea",
+      bgColor: "#e0e7ff",
+    },
+    { icon: Users, label: "Students", color: "#ef4444", bgColor: "#fef2f2" },
+    { icon: BookOpen, label: "Classes", color: "#f59e0b", bgColor: "#fef3c7" },
+    {
+      icon: CheckCircle,
+      label: "Reports",
+      color: "#10b981",
+      bgColor: "#d1fae5",
+    },
   ];
 
   const stats = [
-    { label: 'Total Orders', value: '24', icon: Package, color: '#667eea' },
-    { label: 'Saved Items', value: '12', icon: Heart, color: '#ef4444' },
-    { label: 'Points Earned', value: '1,250', icon: Star, color: '#f59e0b' },
+    { label: "Total Students", value: "24", icon: Users, color: "#667eea" },
+    {
+      label: "Present Today",
+      value: "22",
+      icon: CheckCircle,
+      color: "#10b981",
+    },
+    { label: "Classes", value: "5", icon: BookOpen, color: "#f59e0b" },
   ];
 
   return (
     <LinearGradient
-      colors={['#667eea', '#764ba2']}
+      colors={["#667eea", "#764ba2"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
         {/* Header */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.header,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
+              transform: [{ translateY: slideAnim }],
+            },
           ]}
         >
           <View style={styles.headerLeft}>
@@ -70,18 +108,23 @@ export default function DashboardScreen() {
             </View>
             <View style={styles.greetingContainer}>
               <Text style={styles.greetingText}>Welcome back!</Text>
-              <Text style={styles.nameText}>John Doe</Text>
+              <Text style={styles.nameText}>
+                {user?.profile?.name || "Teacher"}
+              </Text>
             </View>
           </View>
-          
+
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.notificationButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.notificationButton}
+              activeOpacity={0.8}
+            >
               <Bell size={24} color="white" strokeWidth={2} />
               <View style={styles.notificationBadge} />
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.logoutButton} 
+
+            <TouchableOpacity
+              style={styles.logoutButton}
               onPress={handleLogout}
               activeOpacity={0.8}
             >
@@ -90,7 +133,7 @@ export default function DashboardScreen() {
           </View>
         </Animated.View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
@@ -100,26 +143,31 @@ export default function DashboardScreen() {
               styles.animatedContainer,
               {
                 opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }, { scale: scaleAnim }]
-              }
+                transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+              },
             ]}
           >
             {/* Welcome Card */}
             <View style={styles.welcomeCard}>
               <View style={styles.welcomeContent}>
-                <Text style={styles.welcomeTitle}>Ready to Shop?</Text>
+                <Text style={styles.welcomeTitle}>Ready to Start?</Text>
                 <Text style={styles.welcomeSubtitle}>
-                  Discover amazing products and exclusive deals
+                  Manage attendance and track student progress
                 </Text>
-                <TouchableOpacity style={styles.exploreButton} activeOpacity={0.9}>
+                <TouchableOpacity
+                  style={styles.exploreButton}
+                  activeOpacity={0.9}
+                >
                   <LinearGradient
-                    colors={['#667eea', '#764ba2']}
+                    colors={["#667eea", "#764ba2"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={styles.exploreGradient}
                   >
-                    <Text style={styles.exploreButtonText}>Explore Now</Text>
-                    <TrendingUp size={18} color="white" strokeWidth={2} />
+                    <Text style={styles.exploreButtonText}>
+                      Mark Attendance
+                    </Text>
+                    <Calendar size={18} color="white" strokeWidth={2} />
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -134,13 +182,30 @@ export default function DashboardScreen() {
                   return (
                     <TouchableOpacity
                       key={index}
-                      style={[styles.quickActionCard, { backgroundColor: action.bgColor }]}
+                      style={[
+                        styles.quickActionCard,
+                        { backgroundColor: action.bgColor },
+                      ]}
                       activeOpacity={0.8}
                     >
-                      <View style={[styles.quickActionIcon, { backgroundColor: action.color }]}>
-                        <IconComponent size={24} color="white" strokeWidth={2} />
+                      <View
+                        style={[
+                          styles.quickActionIcon,
+                          { backgroundColor: action.color },
+                        ]}
+                      >
+                        <IconComponent
+                          size={24}
+                          color="white"
+                          strokeWidth={2}
+                        />
                       </View>
-                      <Text style={[styles.quickActionLabel, { color: action.color }]}>
+                      <Text
+                        style={[
+                          styles.quickActionLabel,
+                          { color: action.color },
+                        ]}
+                      >
                         {action.label}
                       </Text>
                     </TouchableOpacity>
@@ -157,8 +222,17 @@ export default function DashboardScreen() {
                   const IconComponent = stat.icon;
                   return (
                     <View key={index} style={styles.statCard}>
-                      <View style={[styles.statIcon, { backgroundColor: `${stat.color}20` }]}>
-                        <IconComponent size={20} color={stat.color} strokeWidth={2} />
+                      <View
+                        style={[
+                          styles.statIcon,
+                          { backgroundColor: `${stat.color}20` },
+                        ]}
+                      >
+                        <IconComponent
+                          size={20}
+                          color={stat.color}
+                          strokeWidth={2}
+                        />
                       </View>
                       <Text style={styles.statValue}>{stat.value}</Text>
                       <Text style={styles.statLabel}>{stat.label}</Text>
@@ -174,30 +248,36 @@ export default function DashboardScreen() {
               <View style={styles.activityCard}>
                 <View style={styles.activityItem}>
                   <View style={styles.activityIcon}>
-                    <ShoppingBag size={16} color="#667eea" strokeWidth={2} />
+                    <CheckCircle size={16} color="#10b981" strokeWidth={2} />
                   </View>
                   <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle}>Order #1234 delivered</Text>
+                    <Text style={styles.activityTitle}>
+                      Marked attendance for Class 5A
+                    </Text>
                     <Text style={styles.activityTime}>2 hours ago</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.activityItem}>
                   <View style={styles.activityIcon}>
-                    <Heart size={16} color="#ef4444" strokeWidth={2} />
+                    <Users size={16} color="#667eea" strokeWidth={2} />
                   </View>
                   <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle}>Added 3 items to wishlist</Text>
+                    <Text style={styles.activityTitle}>
+                      Added 3 new students
+                    </Text>
                     <Text style={styles.activityTime}>1 day ago</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.activityItem}>
                   <View style={styles.activityIcon}>
-                    <Star size={16} color="#f59e0b" strokeWidth={2} />
+                    <BookOpen size={16} color="#f59e0b" strokeWidth={2} />
                   </View>
                   <View style={styles.activityContent}>
-                    <Text style={styles.activityTitle}>Earned 50 reward points</Text>
+                    <Text style={styles.activityTitle}>
+                      Created new class schedule
+                    </Text>
                     <Text style={styles.activityTime}>3 days ago</Text>
                   </View>
                 </View>
@@ -218,19 +298,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 24,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatarContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     padding: 12,
     borderRadius: 50,
     marginRight: 12,
@@ -239,36 +319,36 @@ const styles = StyleSheet.create({
     // Container for greeting text
   },
   greetingText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
     fontSize: 14,
   },
   nameText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   notificationButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     padding: 12,
     borderRadius: 50,
     marginRight: 12,
-    position: 'relative',
+    position: "relative",
   },
   notificationBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
     width: 8,
     height: 8,
-    backgroundColor: '#ef4444',
+    backgroundColor: "#ef4444",
     borderRadius: 4,
   },
   logoutButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     padding: 12,
     borderRadius: 50,
   },
@@ -283,73 +363,73 @@ const styles = StyleSheet.create({
     // Container for animated content
   },
   welcomeCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 24,
     padding: 24,
     marginBottom: 32,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 20,
   },
   welcomeContent: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   welcomeTitle: {
     fontSize: 24,
-    fontWeight: '900',
-    color: '#1f2937',
-    textAlign: 'center',
+    fontWeight: "900",
+    color: "#1f2937",
+    textAlign: "center",
     marginBottom: 8,
   },
   welcomeSubtitle: {
-    color: '#6b7280',
-    textAlign: 'center',
+    color: "#6b7280",
+    textAlign: "center",
     marginBottom: 24,
     fontSize: 16,
   },
   exploreButton: {
     borderRadius: 16,
-    shadowColor: '#667eea',
+    shadowColor: "#667eea",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
   },
   exploreGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 16,
   },
   exploreButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginRight: 8,
   },
   sectionContainer: {
     marginBottom: 32,
   },
   sectionTitle: {
-    color: 'white',
+    color: "white",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 16,
   },
   quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   quickActionCard: {
-    width: '48%',
+    width: "48%",
     padding: 20,
     borderRadius: 20,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
   },
   quickActionIcon: {
@@ -359,20 +439,20 @@ const styles = StyleSheet.create({
   },
   quickActionLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   statCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     padding: 20,
     borderRadius: 20,
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
     marginHorizontal: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -385,34 +465,34 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontWeight: "bold",
+    color: "#1f2937",
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
+    color: "#6b7280",
+    textAlign: "center",
   },
   activityCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
     borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
   },
   activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: "#f3f4f6",
   },
   activityIcon: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: "#f9fafb",
     padding: 8,
     borderRadius: 50,
     marginRight: 12,
@@ -422,12 +502,12 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontWeight: "600",
+    color: "#1f2937",
     marginBottom: 2,
   },
   activityTime: {
     fontSize: 12,
-    color: '#6b7280',
+    color: "#6b7280",
   },
 });
