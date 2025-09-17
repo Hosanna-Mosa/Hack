@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
-import { Bell, Settings, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/utils";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -23,7 +23,25 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, user, onLogout }: MainLayoutProps) {
-  const [notifications] = useState(0);
+  const [schoolName, setSchoolName] = useState<string>("School Administration Panel");
+
+  useEffect(() => {
+    const fetchSchoolName = async () => {
+      try {
+        const response = await apiRequest<{ success: boolean; data: { name: string } }>("/schools/me");
+        if (response?.data?.name) {
+          setSchoolName(response.data.name);
+        }
+      } catch (error) {
+        // Keep default name if fetch fails
+        console.warn("Failed to fetch school name:", error);
+      }
+    };
+
+    if (user) {
+      fetchSchoolName();
+    }
+  }, [user]);
 
   return (
     <SidebarProvider>
@@ -37,25 +55,11 @@ export function MainLayout({ children, user, onLogout }: MainLayoutProps) {
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="lg:hidden" />
                 <div className="hidden lg:block">
-                  <h1 className="text-xl font-semibold">School Administration Panel</h1>
+                  <h1 className="text-xl font-semibold">{schoolName}</h1>
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                {/* Notifications */}
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="w-5 h-5" />
-                  {notifications > 0 && (
-                    <Badge className="absolute -top-1 -right-1 px-1 py-0 text-xs bg-destructive text-destructive-foreground min-w-[20px] h-5">
-                      {notifications}
-                    </Badge>
-                  )}
-                </Button>
-
-                {/* Settings */}
-                <Button variant="ghost" size="sm">
-                  <Settings className="w-5 h-5" />
-                </Button>
 
                 {/* User Menu */}
                 <DropdownMenu>
@@ -81,10 +85,6 @@ export function MainLayout({ children, user, onLogout }: MainLayoutProps) {
                     <DropdownMenuItem className="gap-2">
                       <User className="w-4 h-4" />
                       Profile Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="gap-2">
-                      <Settings className="w-4 h-4" />
-                      System Settings
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onLogout} className="gap-2 text-destructive">
