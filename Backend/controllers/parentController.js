@@ -18,19 +18,58 @@ const signToken = (parent) => {
 exports.login = async (req, res, next) => {
   try {
     const { mobile, password } = req.body;
-    console.log(mobile, password);
+    console.log('Login attempt - Raw body:', req.body);
+    console.log('Mobile:', mobile, 'Type:', typeof mobile);
+    console.log('Password:', password, 'Type:', typeof password);
     
-
     if (!mobile || !password) {
+      console.log('Missing credentials - mobile:', !!mobile, 'password:', !!password);
       return res.status(400).json({ 
         success: false, 
         message: 'Mobile number and password are required' 
       });
     }
 
-    // Find parent by mobile number
-    const parent = await Parent.findOne({ mobile, isActive: true });
+    // Normalize mobile number - extract only digits
+    const rawMobile = String(mobile).trim();
+    const digits = rawMobile.replace(/\D/g, '');
+    
+    // Create search candidates
+    const searchCandidates = [];
+    
+    // Add the raw digits
+    if (digits) {
+      searchCandidates.push(digits);
+    }
+    
+    // If it's 10 digits, also try with 91 prefix
+    if (digits.length === 10) {
+      searchCandidates.push(`91${digits}`);
+    }
+    
+    // If it's 12 digits starting with 91, also try without 91
+    if (digits.length === 12 && digits.startsWith('91')) {
+      searchCandidates.push(digits.slice(2));
+    }
+    
+    // Also try the original mobile as string
+    searchCandidates.push(rawMobile);
+    
+    console.log('Searching for mobile:', rawMobile, 'candidates:', searchCandidates);
+
+    // Find parent by mobile number with flexible matching
+    const parent = await Parent.findOne({
+      isActive: true,
+      $or: searchCandidates.map(candidate => ({ mobile: candidate }))
+    });
+    
+    console.log('Parent found:', !!parent);
+    if (parent) {
+      console.log('Parent details:', { id: parent._id, name: parent.name, mobile: parent.mobile, isActive: parent.isActive });
+    }
+    
     if (!parent) {
+      console.log('No parent found with any of the candidates');
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid mobile number or password' 
@@ -38,8 +77,32 @@ exports.login = async (req, res, next) => {
     }
 
     // Check password
-    const isMatch = await parent.comparePassword(password);
+    console.log('Checking password for parent:', parent.name);
+    let isMatch = false;
+    const storedRaw = String(parent.password || '');
+    const stored = storedRaw.replace(/^[\s'"`]+|[\s,'"`]+$/g, ''); // trim and strip stray quotes/commas
+    const isBcryptHash = /^\$2[aby]\$/.test(stored);
+    if (isBcryptHash) {
+      isMatch = await parent.comparePassword(password);
+    } else {
+      // Fallback for legacy/plaintext passwords in DB
+      const candidate = String(password || '').trim();
+      isMatch = stored === candidate || (parent.isDefaultPassword && candidate === 'parent123');
+      if (isMatch) {
+        try {
+          // Upgrade to hashed password transparently
+          parent.password = candidate;
+          await parent.save();
+          console.log('Upgraded plaintext password to hashed for parent', parent._id.toString());
+        } catch (e) {
+          console.warn('Failed to upgrade plaintext password:', e?.message);
+        }
+      }
+    }
+    console.log('Password match:', isMatch);
+    
     if (!isMatch) {
+      console.log('Password does not match');
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid mobile number or password' 
