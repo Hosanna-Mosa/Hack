@@ -65,6 +65,36 @@ exports.createAttendance = async (req, res, next) => {
   }
 };
 
+// Create multiple attendance records in one request
+exports.createAttendanceBatch = async (req, res, next) => {
+  try {
+    const { records } = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ success: false, message: 'records array is required' });
+    }
+
+    const docs = records.map((r) => ({ ...r, markedBy: req.user._id }));
+
+    // Insert many; ignore duplicates per unique index and collect results
+    const inserted = await AttendanceRecord.insertMany(docs, { ordered: false }).catch((err) => {
+      // Handle bulk write errors (e.g., duplicates). We'll still report successes
+      if (err?.writeErrors) {
+        const successful = err.result?.nInserted ?? 0;
+        return { insertedCount: successful, partialError: true };
+      }
+      throw err;
+    });
+
+    // Normalize response
+    if (Array.isArray(inserted)) {
+      return res.status(201).json({ success: true, data: { inserted: inserted.length } });
+    }
+    return res.status(201).json({ success: true, data: { inserted: inserted.insertedCount || 0, partial: true } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Update attendance record
 exports.updateAttendance = async (req, res, next) => {
   try {

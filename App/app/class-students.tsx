@@ -15,6 +15,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, User } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { API } from "../lib/api";
 
 type Student = {
@@ -35,6 +36,7 @@ export default function ClassStudentsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Action sheet state
   const [actionVisible, setActionVisible] = useState(false);
@@ -63,6 +65,41 @@ export default function ClassStudentsScreen() {
     setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, status } : s)));
   };
 
+  const submitAttendance = async () => {
+    try {
+      setSubmitting(true);
+      const today = new Date();
+      const dateIso = today.toISOString();
+      const classIdStr = (classId as string) || "";
+
+      const records = students
+        .filter((s) => s.status && s.status !== "unset")
+        .map((s) => ({
+          studentId: s.id,
+          classId: classIdStr,
+          status: (s.status as any) as "present" | "absent" | "late" | "excused",
+          date: dateIso,
+          method: s.status === "present" ? "manual" : "manual",
+        }));
+
+      if (records.length === 0) {
+        Alert.alert("Nothing to submit", "Please mark at least one student.");
+        return;
+      }
+
+      const resp = await API.attendance.markAttendanceBatch(records);
+      if (resp.success) {
+        Alert.alert("Submitted", "Attendance submitted successfully.");
+      } else {
+        Alert.alert("Submit failed", resp.message || "Unable to submit attendance");
+      }
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const launchCameraForFace = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -77,7 +114,31 @@ export default function ClassStudentsScreen() {
         cameraType: ImagePicker.CameraType.front,
       });
       if (result.canceled) return false;
-      return true;
+
+      // Convert to base64 for backend comparison
+      const asset = result.assets?.[0];
+      if (!asset) return false;
+
+      // On Expo, we need to re-fetch the file as base64
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+
+      const compare = await API.embeddings.compareFace({
+        imageBase64: base64,
+        sourceType: "student-face",
+        threshold: 0.85,
+      });
+
+      if (compare.success && compare.data?.matched && compare.data.bestMatch?.doc?.sourceId) {
+        const matchedSourceId = compare.data.bestMatch.doc.sourceId as string;
+        const matched = students.find((s) => s.id === matchedSourceId || s.admissionNumber === matchedSourceId);
+        if (matched) {
+          markStudent(matched.id, "present");
+          return true;
+        }
+      }
+
+      Alert.alert("Face not recognized", "Could not match the face to any student.");
+      return false;
     } catch (e) {
       Alert.alert("Camera Error", "Unable to open camera. Try again on a real device.");
       return false;
@@ -86,6 +147,7 @@ export default function ClassStudentsScreen() {
 
   const openIdDialog = () => {
     setEnteredStudentId("");
+    // This dialog is generic; it does not depend on a selected student
     setIdDialogVisible(true);
   };
 
@@ -95,15 +157,22 @@ export default function ClassStudentsScreen() {
   };
 
   const confirmIdDialog = () => {
-    if (!selectedStudent) return;
-    if (!enteredStudentId.trim()) {
+    const trimmed = enteredStudentId.trim();
+    if (!trimmed) {
       Alert.alert("Student ID required", "Please enter the student's ID.");
       return;
     }
-    // Optionally: validate ID matches selectedStudent.admissionNumber
-    markStudent(selectedStudent.id, "present");
+    const match = students.find((s) =>
+      (s.admissionNumber || "").toUpperCase() === trimmed.toUpperCase()
+    );
+    if (!match) {
+      Alert.alert("Not found", "No student matches the entered ID.");
+      return;
+    }
+    markStudent(match.id, "present");
     setIdDialogVisible(false);
     setSelectedStudent(null);
+    setEnteredStudentId("");
   };
 
   const handleChoose = async (type: "face" | "id" | "absent") => {
@@ -124,11 +193,10 @@ export default function ClassStudentsScreen() {
         return;
       }
       if (type === "id") {
-        // Hide the sheet first to avoid stacking issues, then open dialog
+        // Manual present without confirmation dialog
+        markStudent(selectedStudent.id, "present");
         hideActionSheetOnly();
-        setTimeout(() => {
-          openIdDialog();
-        }, 180);
+        setSelectedStudent(null);
         return;
       }
     } finally {
@@ -305,6 +373,25 @@ export default function ClassStudentsScreen() {
         />
       </SafeAreaView>
 
+      {/* Submit button */}
+      <View style={{ padding: 16, backgroundColor: "white", borderTopWidth: 1, borderTopColor: "#E5E7EB" }}>
+        <TouchableOpacity
+          disabled={submitting}
+          onPress={submitAttendance}
+          style={{
+            height: 52,
+            borderRadius: 12,
+            backgroundColor: submitting ? "#93C5FD" : "#1D4ED8",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>
+            {submitting ? "Submitting..." : "Submit Attendance"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Action Sheet */}
       <Modal
         transparent
@@ -321,7 +408,7 @@ export default function ClassStudentsScreen() {
               <Text style={styles.sheetBtnText}>Face Recognition</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.sheetBtn, styles.idBtn]} onPress={() => handleChoose("id")}>
-              <Text style={styles.sheetBtnText}>Student ID</Text>
+              <Text style={styles.sheetBtnText}>Mark Present (Manual)</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.sheetBtn, styles.absentBtn]} onPress={() => handleChoose("absent")}>
               <Text style={styles.sheetBtnText}>Mark Absent</Text>
@@ -343,8 +430,8 @@ export default function ClassStudentsScreen() {
       >
         <View style={styles.idDialogBackdrop}>
           <View style={styles.idDialogCard}>
-            <Text style={styles.idTitle}>Enter Student ID</Text>
-            <Text style={styles.idSub}>{selectedStudent?.name}</Text>
+            <Text style={styles.idTitle}>Present by Student ID</Text>
+            <Text style={styles.idSub}>Enter a student's admission number</Text>
             <TextInput
               placeholder="e.g. ADM12345"
               value={enteredStudentId}
