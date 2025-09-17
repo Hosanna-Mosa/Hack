@@ -4,6 +4,8 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StyleSheet } from "react-native";
+import { AuthProvider } from "../contexts/AuthContext";
+import { AuthWrapper } from "../components/AuthWrapper";
 import "../global.css";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -29,9 +31,13 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={styles.gestureHandler}>
-        <RootLayoutNav />
-      </GestureHandlerRootView>
+      <AuthProvider>
+        <AuthWrapper>
+          <GestureHandlerRootView style={styles.gestureHandler}>
+            <RootLayoutNav />
+          </GestureHandlerRootView>
+        </AuthWrapper>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
