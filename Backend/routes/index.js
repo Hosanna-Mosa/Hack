@@ -11,7 +11,7 @@ const { health } = require('../controllers/healthController');
 const router = express.Router();
 
 // Health check
-router.get('/health', health);
+router.get("/health", health);
 
 // API routes
 router.use('/auth', authRoutes);

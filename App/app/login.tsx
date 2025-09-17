@@ -12,6 +12,7 @@ import {
   Platform,
   StyleSheet,
   Switch,
+  Alert,
 } from "react-native";
 import {
   Phone,
@@ -21,13 +22,18 @@ import {
   ArrowLeft,
   BookOpen,
 } from "lucide-react-native";
+import { useAuth } from "../contexts/AuthContext";
+import BackendStatus from "../components/BackendStatus";
+import { TeacherAPI } from "../lib/api";
 
 export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { state, loginWithTeacher, clearError } = useAuth();
+  const { isLoading, error: authError } = state;
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -81,6 +87,7 @@ export default function LoginScreen() {
 
   const handleSignIn = async () => {
     setError("");
+    clearError();
 
     if (!phoneNumber || !password) {
       setError("Please fill in all fields");
@@ -96,15 +103,33 @@ export default function LoginScreen() {
       return;
     }
 
-    setIsLoading(true);
+    try {
+      // Use teacher login API with phone number
+      const response = await TeacherAPI.login({
+        phoneNumber: digitsOnly,
+        password,
+      });
 
-    // Simulate login logic
-    setTimeout(() => {
-      setIsLoading(false);
-      console.log("Login attempt:", { phoneNumber: digitsOnly, password });
-      // Navigate to main tabs after successful login
-      router.replace("/(tabs)" as any);
-    }, 2000);
+      if (response.success && response.user && response.token) {
+        // Update auth context directly with teacher token (avoid /auth/login)
+        await loginWithTeacher({
+          user: response.user as any,
+          token: response.token,
+        });
+
+        // Navigation will be handled by the auth context
+        // If login is successful, the user will be redirected
+      } else {
+        setError(
+          response.message || "Login failed. Please check your credentials."
+        );
+        shakeError();
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Login failed. Please check your credentials.");
+      shakeError();
+    }
   };
 
   return (
@@ -147,6 +172,7 @@ export default function LoginScreen() {
           </Animated.View>
 
           <View style={styles.contentContainer}>
+            <BackendStatus />
             <Animated.View
               style={[
                 styles.animatedContainer,
@@ -210,7 +236,7 @@ export default function LoginScreen() {
                 </View>
 
                 {/* Error Message */}
-                {error ? (
+                {error || authError ? (
                   <Animated.View
                     style={[
                       styles.shakeContainer,
@@ -219,7 +245,7 @@ export default function LoginScreen() {
                       },
                     ]}
                   >
-                    <Text style={styles.errorText}>{error}</Text>
+                    <Text style={styles.errorText}>{error || authError}</Text>
                   </Animated.View>
                 ) : null}
 
