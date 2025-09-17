@@ -5,7 +5,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Students from "./Students";
 import ClassesPage from "./Classes";
 import PhotosPage from "./Photos";
+import AttendancePage from "./Attendance";
 import { TeacherManagement } from "@/components/teachers/TeacherManagement";
+import ReportsPage from "./Reports";
 import { apiRequest } from "@/lib/api";
 
 const Index = () => {
@@ -40,11 +42,11 @@ const Index = () => {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/students" element={<Students />} />
-        <Route path="/attendance" element={<div className="p-8 text-center text-muted-foreground">Attendance management coming soon...</div>} />
+        <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/classes" element={<ClassesPage />} />
         <Route path="/photos" element={<PhotosPage />} />
         <Route path="/teachers" element={<TeacherManagement />} />
-        <Route path="/reports" element={<div className="p-8 text-center text-muted-foreground">Reports & analytics coming soon...</div>} />
+        <Route path="/reports" element={<ReportsPage />} />
         <Route path="/communication" element={<div className="p-8 text-center text-muted-foreground">Communication hub coming soon...</div>} />
         <Route path="/notifications" element={<div className="p-8 text-center text-muted-foreground">Notifications management coming soon...</div>} />
         <Route path="/settings" element={<div className="p-8 text-center text-muted-foreground">System settings coming soon...</div>} />

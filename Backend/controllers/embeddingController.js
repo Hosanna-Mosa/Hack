@@ -72,7 +72,7 @@ exports.upsertTextEmbedding = async (req, res, next) => {
 
 exports.upsertImageEmbedding = async (req, res, next) => {
   try {
-    const { sourceId, sourceType = 'image', metadata, filename } = req.body;
+    const { sourceId, sourceType = 'image', metadata, filename, verbose } = req.body;
     if (!sourceId) {
       return res.status(400).json({ success: false, message: 'sourceId is required' });
     }
@@ -106,7 +106,14 @@ exports.upsertImageEmbedding = async (req, res, next) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    res.status(201).json({ success: true, data: { id: doc._id, dims: vector.length } });
+    const base = { id: doc._id, dims: vector.length };
+    if (String(verbose) === 'true') {
+      base.vector = vector;
+      base.metadata = metadata;
+      base.sourceId = sourceId;
+      base.sourceType = sourceType;
+    }
+    res.status(201).json({ success: true, data: base });
   } catch (error) {
     next(error);
   }
@@ -158,7 +165,7 @@ exports.searchByCosineSimilarity = async (req, res, next) => {
 // Optional: threshold (default 0.85) and sourceType filter
 exports.compareImage = async (req, res, next) => {
   try {
-    const { threshold = 0.85, sourceType } = req.body;
+    const { threshold = 0.85, sourceType, verbose, perDim } = req.body;
     if (!req.file && !req.body.imageBase64 && !req.body.imagePath) {
       return res.status(400).json({ success: false, message: 'Provide image via multipart file, imageBase64, or imagePath' });
     }
@@ -184,24 +191,41 @@ exports.compareImage = async (req, res, next) => {
     const filter = sourceType ? { sourceType } : {};
     const all = await Embedding.find(filter).lean();
 
-    function cosineSim(a, b) {
+    function cosineSimWithDetails(a, b, collectPerDim) {
       let dot = 0, na = 0, nb = 0;
       const len = Math.min(a.length, b.length);
+      const per = collectPerDim ? [] : null;
       for (let i = 0; i < len; i++) {
-        dot += a[i] * b[i];
-        na += a[i] * a[i];
-        nb += b[i] * b[i];
+        const ai = a[i];
+        const bi = b[i];
+        const prod = ai * bi;
+        dot += prod;
+        na += ai * ai;
+        nb += bi * bi;
+        if (per) per.push({ i, a: ai, b: bi, prod });
       }
-      const denom = Math.sqrt(na) * Math.sqrt(nb) || 1;
-      return dot / denom;
+      const normA = Math.sqrt(na);
+      const normB = Math.sqrt(nb);
+      const denom = normA * normB || 1;
+      const score = dot / denom;
+      return { score, dot, normA, normB, denom, len, perDim: per };
     }
 
-    const scored = all.map(d => ({ doc: d, score: cosineSim(queryVector, d.vector) }));
+    const scored = all.map(d => {
+      const details = cosineSimWithDetails(queryVector, d.vector, String(perDim) === 'true');
+      return { doc: d, score: details.score, details };
+    });
     scored.sort((a, b) => b.score - a.score);
     const best = scored[0] || null;
     const matched = Boolean(best && best.score >= Number(threshold));
 
-    return res.json({ success: true, data: { matched, bestMatch: best, threshold: Number(threshold) } });
+    const response = { matched, threshold: Number(threshold) };
+    if (best) response.bestMatch = best;
+    if (String(verbose) === 'true') {
+      response.queryVector = queryVector;
+      response.candidates = scored;
+    }
+    return res.json({ success: true, data: response });
   } catch (error) {
     next(error);
   }
@@ -211,7 +235,7 @@ exports.compareImage = async (req, res, next) => {
 // Body: { sourceIdA: string, sourceIdB: string, threshold?: number, sourceType?: string }
 exports.compareStored = async (req, res, next) => {
   try {
-    const { sourceIdA, sourceIdB, threshold = 0.9, sourceType = 'image' } = req.body;
+    const { sourceIdA, sourceIdB, threshold = 0.9, sourceType = 'image', verbose, perDim } = req.body;
     if (!sourceIdA || !sourceIdB) {
       return res.status(400).json({ success: false, message: 'sourceIdA and sourceIdB are required' });
     }
@@ -222,23 +246,38 @@ exports.compareStored = async (req, res, next) => {
     if (!a || !b) {
       return res.status(404).json({ success: false, message: 'One or both embeddings not found' });
     }
-    function cosineSimilarity(x, y) {
+    function cosineSimilarityWithDetails(x, y, collectPerDim) {
       let dot = 0, nx = 0, ny = 0;
       const len = Math.min(x.length, y.length);
+      const per = collectPerDim ? [] : null;
       for (let i = 0; i < len; i++) {
-        dot += x[i] * y[i];
-        nx += x[i] * x[i];
-        ny += y[i] * y[i];
+        const xi = x[i];
+        const yi = y[i];
+        const prod = xi * yi;
+        dot += prod;
+        nx += xi * xi;
+        ny += yi * yi;
+        if (per) per.push({ i, a: xi, b: yi, prod });
       }
-      const denom = Math.sqrt(nx) * Math.sqrt(ny) || 1;
-      return dot / denom;
+      const normA = Math.sqrt(nx);
+      const normB = Math.sqrt(ny);
+      const denom = normA * normB || 1;
+      const score = dot / denom;
+      return { score, dot, normA, normB, denom, len, perDim: per };
     }
-    const score = cosineSimilarity(a.vector, b.vector);
+    const details = cosineSimilarityWithDetails(a.vector, b.vector, String(perDim) === 'true');
+    const score = details.score;
     // Also report normalized L2 distance derived from cosine for transparency
     const normDistance = Math.sqrt(Math.max(0, 2 * (1 - score)));
     const t = Number(threshold);
     const matched = score >= t;
-    return res.json({ success: true, data: { matched, cosine: score, normDistance, threshold: t, a: { id: a._id, sourceId: a.sourceId }, b: { id: b._id, sourceId: b.sourceId } } });
+    const payload = { matched, cosine: score, normDistance, threshold: t, a: { id: a._id, sourceId: a.sourceId }, b: { id: b._id, sourceId: b.sourceId } };
+    if (String(verbose) === 'true') {
+      payload.details = details;
+      payload.a.vector = a.vector;
+      payload.b.vector = b.vector;
+    }
+    return res.json({ success: true, data: payload });
   } catch (error) {
     next(error);
   }

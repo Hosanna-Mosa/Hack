@@ -14,6 +14,8 @@ import {
   GraduationCap
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { apiRequest } from "@/lib/api";
 
 // Mock data - in real app this would come from backend
 const dashboardData = {
@@ -43,9 +45,38 @@ const dashboardData = {
 };
 
 export function Dashboard() {
-  const { todayAttendance, weeklyStats, alerts, recentActivity } = dashboardData;
-  const attendanceRate = (todayAttendance.present / todayAttendance.total * 100).toFixed(1);
+  const [today, setToday] = useState({ present: 0, absent: 0, late: 0, total: 0 });
+  const [classesActive, setClassesActive] = useState(0);
+  const [teachersPresent, setTeachersPresent] = useState(0);
+  const [alerts, setAlerts] = useState(dashboardData.alerts);
+  const [recentActivity, setRecentActivity] = useState(dashboardData.recentActivity);
+  const attendanceRate = useMemo(() => (today.total ? ((today.present / today.total) * 100).toFixed(1) : '0.0'), [today]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const todayStr = new Date().toISOString().slice(0,10);
+        const res = await apiRequest<any>(`/attendance?date=${todayStr}`);
+        const list = (res.data as any[]) || [];
+        const total = list.length;
+        const present = list.filter(r => r.status === 'present').length;
+        const late = list.filter(r => r.status === 'late').length;
+        const absent = list.filter(r => r.status === 'absent' || r.status === 'excused').length;
+        setToday({ present, late, absent, total });
+      } catch {}
+      try {
+        const res = await apiRequest<any>(`/classes`);
+        setClassesActive(Array.isArray(res.data) ? res.data.length : 0);
+      } catch {}
+      try {
+        const res = await apiRequest<any>(`/teachers/classes/attendance-status`);
+        const count = (res.data?.teachersPresent as number) || 0;
+        setTeachersPresent(count);
+      } catch {}
+    };
+    load();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -78,7 +109,7 @@ export function Dashboard() {
           <CardContent>
             <div className="text-3xl font-bold text-white">{attendanceRate}%</div>
             <p className="text-white/80 text-sm">
-              {todayAttendance.present} of {todayAttendance.total} students
+              {today.present} of {today.total} students
             </p>
           </CardContent>
         </Card>
@@ -91,7 +122,7 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{todayAttendance.total}</div>
+            <div className="text-3xl font-bold">{today.total}</div>
             <p className="text-muted-foreground text-sm">Enrolled this semester</p>
           </CardContent>
         </Card>
@@ -104,7 +135,7 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{weeklyStats.classesActive}</div>
+            <div className="text-3xl font-bold">{classesActive}</div>
             <p className="text-muted-foreground text-sm">Currently in session</p>
           </CardContent>
         </Card>
@@ -117,7 +148,7 @@ export function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{weeklyStats.teachersPresent}</div>
+            <div className="text-3xl font-bold">{teachersPresent}</div>
             <p className="text-muted-foreground text-sm">On campus today</p>
           </CardContent>
         </Card>
@@ -139,29 +170,29 @@ export function Dashboard() {
                 <div className="w-3 h-3 bg-success rounded-full"></div>
                 <span>Present</span>
               </div>
-              <span className="font-semibold">{todayAttendance.present}</span>
+              <span className="font-semibold">{today.present}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-warning rounded-full"></div>
                 <span>Late</span>
               </div>
-              <span className="font-semibold">{todayAttendance.late}</span>
+              <span className="font-semibold">{today.late}</span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-destructive rounded-full"></div>
                 <span>Absent</span>
               </div>
-              <span className="font-semibold">{todayAttendance.absent}</span>
+              <span className="font-semibold">{today.absent}</span>
             </div>
             <div className="pt-2 border-t">
               <div className="flex items-center justify-between font-semibold">
                 <span>Weekly Average</span>
                 <div className="flex items-center gap-1">
-                  <span>{weeklyStats.avgAttendance}%</span>
+                  <span>{attendanceRate}%</span>
                   <TrendingUp className="w-4 h-4 text-success" />
-                  <span className="text-success text-sm">{weeklyStats.trend}</span>
+                  <span className="text-success text-sm">--</span>
                 </div>
               </div>
             </div>
