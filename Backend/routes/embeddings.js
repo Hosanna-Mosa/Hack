@@ -35,6 +35,20 @@ router.post('/search', [
   handleValidationErrors
 ], auth, controller.searchByCosineSimilarity);
 
+// Compare an input image to stored embeddings
+router.post('/compare', upload.single('image'), [
+  body('threshold').optional().isFloat({ min: 0, max: 1 }),
+  handleValidationErrors
+], auth, controller.compareImage);
+
+// Compare two stored embeddings by sourceId
+router.post('/compare-stored', [
+  body('sourceIdA').isString().notEmpty(),
+  body('sourceIdB').isString().notEmpty(),
+  body('threshold').optional().isFloat({ min: 0, max: 1 }),
+  handleValidationErrors
+], auth, controller.compareStored);
+
 module.exports = router;
 
 
