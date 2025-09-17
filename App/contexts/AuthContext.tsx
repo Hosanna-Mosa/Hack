@@ -116,6 +116,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error("Auth check failed:", error);
+      
+      // Only remove token and logout if it's not a network error
+      // Network errors should not automatically logout the user
+      if (error instanceof Error && error.message.includes("Network request failed")) {
+        console.warn("Network error during auth check - keeping user logged in");
+        // Don't remove token on network errors, just log the warning
+        return;
+      }
+      
       await TokenManager.removeToken();
       dispatch({ type: "AUTH_LOGOUT" });
     }

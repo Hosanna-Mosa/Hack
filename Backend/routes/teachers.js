@@ -66,6 +66,7 @@ router.put('/profile', [
 ], teacherController.updateTeacherProfile);
 
 router.get('/classes', auth, teacherController.getAssignedClasses);
+router.get('/classes/attendance-status', auth, teacherController.getClassesWithAttendanceStatus);
 router.get('/dashboard', auth, teacherController.getTeacherDashboard);
 router.post('/change-password', [
   auth,
