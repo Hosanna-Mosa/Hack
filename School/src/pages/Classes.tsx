@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { MoreHorizontal } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -19,6 +20,11 @@ export default function ClassesPage() {
 	const [assignOpen, setAssignOpen] = useState(false);
 	const [assignClassId, setAssignClassId] = useState<string | null>(null);
 	const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+	const [moreOpen, setMoreOpen] = useState(false);
+	const [moreClassId, setMoreClassId] = useState<string | null>(null);
+	const [removeOpen, setRemoveOpen] = useState(false);
+	const [classStudents, setClassStudents] = useState<StudentItem[]>([]);
+	const [studentsToRemove, setStudentsToRemove] = useState<string[]>([]);
 	const { toast } = useToast();
 
 	// crude user schoolId retrieval from localStorage if present
@@ -102,7 +108,9 @@ export default function ClassesPage() {
 										<div className="font-medium">{c.name} — {c.grade}-{c.section}</div>
 										<div className="text-sm text-muted-foreground">Capacity {c.capacity}</div>
 									</div>
-									<Button variant="outline" onClick={() => { setAssignClassId(c._id); setAssignOpen(true); }}>Add Students</Button>
+							<Button variant="ghost" size="icon" aria-label="More options" onClick={() => { setMoreClassId(c._id); setMoreOpen(true); }}>
+								<MoreHorizontal className="h-5 w-5" />
+							</Button>
 								</div>
 							))}
 						</div>
@@ -175,6 +183,97 @@ export default function ClassesPage() {
 								toast({ title: 'Failed to assign', description: e.message });
 							}
 						}}>Assign</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* More Options Dialog */}
+			<Dialog open={moreOpen} onOpenChange={setMoreOpen}>
+				<DialogContent className="sm:max-w-[520px]">
+					<DialogHeader>
+						<DialogTitle>Class Options</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-2">
+						{/* Quick stats */}
+						{(() => {
+							const current = classes.find(x => x._id === moreClassId);
+							const teacherNames = (current?.teacherIds || [])
+								.map(tid => teacherOptions.find(t => t._id === tid)?.name)
+								.filter(Boolean)
+								.join(", ") || "Unassigned";
+							// student count might not be available on the class item
+							const studentCount = (current as any)?.studentCount ?? "N/A";
+							return (
+								<div className="rounded-md border p-3 text-sm">
+									<div className="flex items-center justify-between">
+										<span className="text-muted-foreground">No. of students</span>
+										<span className="font-medium">{studentCount}</span>
+									</div>
+									<div className="mt-2 flex items-start justify-between gap-3">
+										<span className="text-muted-foreground">Assigned teacher</span>
+										<span className="font-medium text-right">{teacherNames}</span>
+									</div>
+								</div>
+							);
+						})()}
+
+						<div className="flex items-center gap-2">
+							<Button onClick={() => {
+								if (!moreClassId) return;
+								setMoreOpen(false);
+								setAssignClassId(moreClassId);
+								setAssignOpen(true);
+							}}>Add Students</Button>
+							<Button variant="outline" onClick={async () => {
+								if (!moreClassId) return;
+								try {
+									const res = await apiRequest<{ success: boolean; data: any[] }>(`/classes/${moreClassId}/students`);
+									setClassStudents((res.data || []).map((s: any) => ({ _id: s._id, name: s.name, admissionNumber: s.academicInfo?.admissionNumber })));
+									setStudentsToRemove([]);
+									setRemoveOpen(true);
+									setMoreOpen(false);
+								} catch (e: any) {
+									toast({ title: 'Failed to load students', description: e.message });
+								}
+							}}>Delete Students</Button>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={() => setMoreOpen(false)}>Close</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Remove Students Dialog */}
+			<Dialog open={removeOpen} onOpenChange={setRemoveOpen}>
+				<DialogContent className="sm:max-w-[600px]">
+					<DialogHeader>
+						<DialogTitle>Remove Students from Class</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-3 py-2">
+						<div className="text-sm text-muted-foreground">Select students to remove. They will become unassigned.</div>
+						<select multiple className="border rounded-md p-2 h-64"
+							value={studentsToRemove}
+							onChange={(e) => setStudentsToRemove(Array.from(e.target.selectedOptions).map(o => o.value))}
+						>
+							{classStudents.map(s => (
+								<option key={s._id} value={s._id}>{s.name}{s.admissionNumber ? ` (${s.admissionNumber})` : ''}</option>
+							))}
+						</select>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={() => setRemoveOpen(false)}>Cancel</Button>
+						<Button variant="destructive" onClick={async () => {
+							if (!moreClassId || studentsToRemove.length === 0) return;
+							try {
+								await apiRequest(`/classes/${moreClassId}/remove-students`, { method: 'POST', body: JSON.stringify({ studentIds: studentsToRemove }) });
+								setRemoveOpen(false);
+								setStudentsToRemove([]);
+								fetchData();
+							} catch (e: any) {
+								toast({ title: 'Failed to remove', description: e.message });
+							}
+						}}>Remove Selected</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

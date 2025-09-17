@@ -82,6 +82,42 @@ router.post('/:id/assign-students', [
     }
 });
 
+// GET /api/classes/:id/students
+router.get('/:id/students', [
+    param('id').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid class id required'),
+    validate
+], async (req, res, next) => {
+    try {
+        const classId = req.params.id;
+        const students = await Student.find({ classId }).select('_id name academicInfo.admissionNumber');
+        res.json({ success: true, data: students });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// POST /api/classes/:id/remove-students
+router.post('/:id/remove-students', [
+    auth,
+    param('id').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid class id required'),
+    body('studentIds').isArray({ min: 1 }).withMessage('studentIds array required'),
+    validate
+], async (req, res, next) => {
+    try {
+        const classId = req.params.id;
+        const { studentIds } = req.body;
+        // Unassign class from students
+        await Student.updateMany({ _id: { $in: studentIds }, classId }, { $set: { classId: null } });
+        // Pull student ids from class
+        await ClassModel.updateOne({ _id: classId }, { $pull: { studentIds: { $in: studentIds } } });
+
+        const updated = await Student.find({ _id: { $in: studentIds } }).select('_id name classId');
+        res.json({ success: true, data: updated });
+    } catch (err) {
+        next(err);
+    }
+});
+
 // GET /api/classes/unassigned-students?schoolId=...
 router.get('/unassigned', [
     query('schoolId').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid schoolId is required'),
