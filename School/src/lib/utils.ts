@@ -10,7 +10,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit & { token?: string } = {}
 ): Promise<T> {
-  const baseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const baseUrl = (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8000/api';
   const { token, headers, ...rest } = options;
   let bearer = token;
   if (!bearer) {

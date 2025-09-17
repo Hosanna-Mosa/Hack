@@ -148,7 +148,14 @@ async function apiRequest<T>(
     // Handle specific error types
     if (error instanceof TypeError && error.message.includes("fetch")) {
       throw new Error(
-        "Network error: Unable to connect to server. Please check if the backend is running."
+        "Network error: Unable to connect to server. Please check if the backend is running on http://localhost:8000"
+      );
+    }
+
+    // Handle network request failed specifically
+    if (error instanceof TypeError && error.message.includes("Network request failed")) {
+      throw new Error(
+        "Backend server is not running. Please start the backend server with 'npm start' in the Backend directory."
       );
     }
 
@@ -287,6 +294,11 @@ export const ClassesAPI = {
   async getClass(classId: string): Promise<ApiResponse> {
     return apiRequest(`/classes/${classId}`);
   },
+
+  // Get students by class ID
+  async getStudentsByClass(classId: string): Promise<ApiResponse> {
+    return apiRequest(`/classes/${classId}/students`);
+  },
 };
 
 // Teacher API services
@@ -321,6 +333,11 @@ export const TeacherAPI = {
   // Get assigned classes
   async getAssignedClasses(): Promise<ApiResponse> {
     return apiRequest("/teachers/classes");
+  },
+
+  // Get classes with attendance status
+  async getClassesWithAttendanceStatus(): Promise<ApiResponse> {
+    return apiRequest("/teachers/classes/attendance-status");
   },
 
   // Get teacher dashboard

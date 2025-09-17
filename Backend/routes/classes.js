@@ -82,6 +82,56 @@ router.post('/:id/assign-students', [
     }
 });
 
+// GET /api/classes/:id/students - Get all students in a specific class
+router.get('/:id/students', [
+    auth,
+    param('id').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid class ID is required'),
+    validate
+], async (req, res, next) => {
+    try {
+        const classId = req.params.id;
+        
+        // First verify the class exists
+        const classData = await ClassModel.findById(classId);
+        if (!classData) {
+            return res.status(404).json({ success: false, message: 'Class not found' });
+        }
+
+        // Get all students in this class
+        const students = await Student.find({ 
+            classId: classId, 
+            isActive: true 
+        })
+        .select('name academicInfo.admissionNumber contactInfo isActive')
+        .sort({ 'academicInfo.admissionNumber': 1 });
+
+        // Transform the data to match frontend expectations
+        const transformedStudents = students.map(student => ({
+            id: student._id,
+            name: student.name || 'Unknown Student',
+            admissionNumber: student.academicInfo?.admissionNumber || 'N/A',
+            email: student.contactInfo?.emergencyContact?.email || '',
+            phone: student.contactInfo?.emergencyContact?.phone || '',
+            status: 'unset' // Default status, can be updated with attendance data
+        }));
+
+        res.json({ 
+            success: true, 
+            data: transformedStudents,
+            classInfo: {
+                id: classData._id,
+                name: classData.name,
+                grade: classData.grade,
+                section: classData.section,
+                totalStudents: transformedStudents.length
+            }
+        });
+    } catch (err) {
+        console.error('Get students by class error:', err);
+        next(err);
+    }
+});
+
 // GET /api/classes/unassigned-students?schoolId=...
 router.get('/unassigned', [
     query('schoolId').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid schoolId is required'),

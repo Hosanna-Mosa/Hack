@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Teacher = require('../models/Teacher');
 const School = require('../models/School');
 const Class = require('../models/Class');
+const AttendanceRecord = require('../models/AttendanceRecord');
 
 const signToken = (user) => {
   const secret = process.env.JWT_SECRET || 'dev_default_jwt_secret_change_me';
@@ -385,6 +386,139 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+// Get teacher's classes with attendance status for today
+const getClassesWithAttendanceStatus = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    
+    // Find teacher and populate assigned classes
+    const teacher = await Teacher.findOne({ userId })
+      .populate('assignedClassIds', 'name grade section studentIds')
+      .populate('schoolId', 'name');
+
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+
+    if (!teacher.assignedClassIds || teacher.assignedClassIds.length === 0) {
+      return res.json({ success: true, data: [], message: 'No classes assigned to this teacher' });
+    }
+
+    // Get attendance records for today for all assigned classes
+    const classIds = teacher.assignedClassIds.map(cls => cls._id);
+    
+    const attendanceData = await AttendanceRecord.aggregate([
+      {
+        $match: {
+          classId: { $in: classIds },
+          date: today
+        }
+      },
+      {
+        $group: {
+          _id: '$classId',
+          totalMarked: { $sum: 1 },
+          present: {
+            $sum: { $cond: [{ $eq: ['$status', 'present'] }, 1, 0] }
+          },
+          absent: {
+            $sum: { $cond: [{ $eq: ['$status', 'absent'] }, 1, 0] }
+          },
+          late: {
+            $sum: { $cond: [{ $eq: ['$status', 'late'] }, 1, 0] }
+          },
+          excused: {
+            $sum: { $cond: [{ $eq: ['$status', 'excused'] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    // Create a map for quick lookup of attendance data
+    const attendanceMap = {};
+    attendanceData.forEach(item => {
+      attendanceMap[item._id.toString()] = item;
+    });
+
+    // Process each class and determine status
+    const classesWithStatus = teacher.assignedClassIds.map(cls => {
+      const studentCount = cls.studentIds ? cls.studentIds.length : 0;
+      const attendance = attendanceMap[cls._id.toString()];
+      
+      let status = 'Absent Data';
+      let statusColor = '#9CA3AF';
+      let leftBarColor = '#9CA3AF';
+
+      if (attendance) {
+        const { totalMarked, present, absent, late, excused } = attendance;
+        
+        if (totalMarked === studentCount) {
+          // All students marked
+          if (present === studentCount) {
+            status = 'Completed';
+            statusColor = '#10B981';
+            leftBarColor = '#10B981';
+          } else if (absent > 0 || late > 0) {
+            status = 'Completed';
+            statusColor = '#10B981';
+            leftBarColor = '#10B981';
+          }
+        } else if (totalMarked > 0) {
+          // Partially marked
+          status = 'Ongoing';
+          statusColor = '#3B82F6';
+          leftBarColor = '#3B82F6';
+        } else {
+          // No attendance marked yet
+          status = 'Pending';
+          statusColor = '#60A5FA';
+          leftBarColor = '#60A5FA';
+        }
+      } else {
+        // No attendance data for today
+        const currentHour = new Date().getHours();
+        if (currentHour >= 9) { // After 9 AM, consider it delayed
+          status = 'Delayed';
+          statusColor = '#F59E0B';
+          leftBarColor = '#F59E0B';
+        } else {
+          status = 'Pending';
+          statusColor = '#60A5FA';
+          leftBarColor = '#60A5FA';
+        }
+      }
+
+      return {
+        id: cls._id,
+        className: `${cls.grade} ${cls.name}`,
+        studentCount,
+        status,
+        statusColor,
+        leftBarColor,
+        attendanceData: attendance || {
+          totalMarked: 0,
+          present: 0,
+          absent: 0,
+          late: 0,
+          excused: 0
+        }
+      };
+    });
+
+    res.json({ 
+      success: true, 
+      data: classesWithStatus,
+      date: today.toISOString().split('T')[0] // Return current date
+    });
+
+  } catch (error) {
+    console.error('Get classes with attendance status error:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   // Admin CRUD
   createTeacher,
@@ -397,5 +531,6 @@ module.exports = {
   getAssignedClasses,
   updateTeacherProfile,
   getTeacherDashboard,
-  changePassword
+  changePassword,
+  getClassesWithAttendanceStatus
 };
