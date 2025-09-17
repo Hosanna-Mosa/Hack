@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +21,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { apiRequest } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock student data
+// TODO: replace mock with live fetch (done below); keep as fallback
 const mockStudents = [
   {
     id: 1,
@@ -107,31 +111,92 @@ const mockStudents = [
 ];
 
 export function StudentManagement() {
-  const [students] = useState(mockStudents);
+  const [students, setStudents] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGrade, setSelectedGrade] = useState("all");
-
-  const filteredStudents = students.filter(student => {
+  const [addOpen, setAddOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  const filteredStudents = students.filter((student: any) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          student.studentId.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          student.email.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesGrade = selectedGrade === "all" || student.grade === selectedGrade;
-    
     return matchesSearch && matchesGrade;
   });
-
   const getAttendanceColor = (rate: number) => {
     if (rate >= 95) return "text-success";
     if (rate >= 90) return "text-warning"; 
     return "text-destructive";
   };
-
   const getAttendanceBadge = (rate: number) => {
     if (rate >= 95) return "bg-success-soft text-success";
     if (rate >= 90) return "bg-warning-soft text-warning";
     return "bg-destructive-soft text-destructive";
   };
+  // Minimal form state mapping important fields from schema (simplified)
+  const [form, setForm] = useState({
+    studentId: "",
+    name: "",
+    dateOfBirth: "",
+    admissionNumber: "",
+    parent: { name: "", email: "", mobile: "" }
+  });
+
+  const submitNewStudent = async () => {
+    if (!form.studentId || !form.name || !form.dateOfBirth || !form.parent.name || !form.parent.mobile) {
+      toast({ title: "Missing fields", description: "Please fill all required fields." });
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload: any = {
+        studentId: form.studentId,
+        name: form.name,
+        dateOfBirth: form.dateOfBirth,
+        academicInfo: { admissionDate: new Date().toISOString(), admissionNumber: form.admissionNumber || form.studentId },
+        parentIds: [],
+        parents: [ { name: form.parent.name, email: form.parent.email || null, mobile: form.parent.mobile, password: 'parent123' } ]
+      };
+      await apiRequest(`/students`, { method: 'POST', body: JSON.stringify(payload) });
+      toast({ title: "Student added", description: form.name });
+      setAddOpen(false);
+      setForm({ studentId: "", name: "", dateOfBirth: "", admissionNumber: "", parent: { name: "", email: "", mobile: "" } });
+    } catch (e: any) {
+      toast({ title: "Failed to add", description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Load students from backend based on schoolId
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const sid = user?.schoolId;
+        const path = sid ? `/students?schoolId=${sid}` : `/students`;
+        const res = await apiRequest<{ success: boolean; data: any[] }>(path);
+        const normalized = (res.data || []).map((s: any) => ({
+          name: s.name || s.profile?.name || 'Unnamed',
+          studentId: s.studentId || '',
+          grade: s.classId?.grade ? `Grade ${s.classId.grade}` : (s.classId?.name || 'Unassigned'),
+          section: s.classId?.section || '',
+          email: s.contactInfo?.email || '',
+          guardianName: '',
+          guardianPhone: '',
+          attendanceRate: 0,
+          status: s.isActive ? 'Active' : 'Inactive'
+        }));
+        setStudents(normalized);
+      } catch {
+        // fallback to mock if fetch fails
+        setStudents(mockStudents as any);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -150,12 +215,63 @@ export function StudentManagement() {
             <Upload className="w-4 h-4" />
             Import
           </Button>
-          <Button className="gap-2 gradient-primary text-white">
+          <Button className="gap-2 gradient-primary text-white" onClick={() => setAddOpen(true)}>
             <Plus className="w-4 h-4" />
             Add Student
           </Button>
         </div>
       </div>
+
+      {/* Add Student Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-[640px]">
+          <DialogHeader>
+            <DialogTitle>Add New Student</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm">Student ID</label>
+                <Input value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value.toUpperCase() })} placeholder="e.g., STU123" />
+              </div>
+              <div>
+                <label className="text-sm">Admission Number</label>
+                <Input value={form.admissionNumber} onChange={(e) => setForm({ ...form, admissionNumber: e.target.value })} placeholder="e.g., ADM123" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm">Full Name</label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Enter student name" />
+            </div>
+            <div>
+              <label className="text-sm">Date of Birth</label>
+              <Input type="date" value={form.dateOfBirth} onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })} />
+            </div>
+
+            <div className="pt-2 border-t">
+              <div className="font-medium">Parent Details</div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm">Parent Name</label>
+                <Input value={form.parent.name} onChange={(e) => setForm({ ...form, parent: { ...form.parent, name: e.target.value } })} />
+              </div>
+              <div>
+                <label className="text-sm">Email (optional)</label>
+                <Input type="email" value={form.parent.email} onChange={(e) => setForm({ ...form, parent: { ...form.parent, email: e.target.value } })} />
+              </div>
+              <div>
+                <label className="text-sm">Mobile</label>
+                <Input value={form.parent.mobile} onChange={(e) => setForm({ ...form, parent: { ...form.parent, mobile: e.target.value } })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={submitNewStudent} disabled={saving}>{saving ? 'Saving...' : 'Add Student'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

@@ -129,8 +129,21 @@ exports.login = async (req, res, next) => {
   }
 };
 
-// Get current authenticated user
-exports.getMe = async (req, res) => {
-  res.json({ success: true, user: req.user });
+// Get current authenticated user (augmented with schoolId)
+exports.getMe = async (req, res, next) => {
+  try {
+    const user = req.user;
+    let schoolId = null;
+    if (user?.role === 'admin') {
+      const school = await School.findOne({ adminIds: user._id }).select('_id');
+      schoolId = school?._id || null;
+    } else if (user?.role === 'teacher') {
+      const teacher = await (await require('../models/Teacher').findOne({ userId: user._id }).select('schoolId'));
+      schoolId = teacher?.schoolId || null;
+    }
+    res.json({ success: true, user: { ...user.toJSON(), schoolId } });
+  } catch (err) {
+    next(err);
+  }
 };
 

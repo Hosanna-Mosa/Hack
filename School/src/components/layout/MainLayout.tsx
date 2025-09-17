@@ -23,7 +23,7 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, user, onLogout }: MainLayoutProps) {
-  const [notifications] = useState(3); // Mock notification count
+  const [notifications] = useState(0);
 
   return (
     <SidebarProvider>
@@ -65,7 +65,7 @@ export function MainLayout({ children, user, onLogout }: MainLayoutProps) {
                         <User className="w-4 h-4 text-primary-foreground" />
                       </div>
                       <div className="hidden md:block text-left">
-                        <div className="text-sm font-medium">{user?.name || "Admin User"}</div>
+                        <div className="text-sm font-medium">{user?.name || "User"}</div>
                         <div className="text-xs text-muted-foreground capitalize">
                           {user?.role || "Administrator"}
                         </div>
@@ -74,8 +74,8 @@ export function MainLayout({ children, user, onLogout }: MainLayoutProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <div className="px-2 py-1.5">
-                      <p className="text-sm font-medium">{user?.name || "Admin User"}</p>
-                      <p className="text-xs text-muted-foreground">{user?.email || "admin@school.edu"}</p>
+                      <p className="text-sm font-medium">{user?.name || "User"}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email || ""}</p>
                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem className="gap-2">

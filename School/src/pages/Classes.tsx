@@ -8,12 +8,17 @@ import { useToast } from "@/hooks/use-toast";
 
 interface TeacherOption { _id: string; name: string; email: string; }
 interface ClassItem { _id: string; name: string; grade: string; section: string; capacity: number; teacherIds: string[]; }
+interface StudentItem { _id: string; name: string; admissionNumber?: string; }
 
 export default function ClassesPage() {
 	const [classes, setClasses] = useState<ClassItem[]>([]);
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
+	const [unassigned, setUnassigned] = useState<StudentItem[]>([]);
+	const [assignOpen, setAssignOpen] = useState(false);
+	const [assignClassId, setAssignClassId] = useState<string | null>(null);
+	const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 	const { toast } = useToast();
 
 	// crude user schoolId retrieval from localStorage if present
@@ -21,17 +26,38 @@ export default function ClassesPage() {
 		try { return JSON.parse(localStorage.getItem('user') || '{}').schoolId || null; } catch { return null; }
 	}, []);
 
+	const [effectiveSchoolId, setEffectiveSchoolId] = useState<string | null>(null);
+
+	useEffect(() => {
+		const resolveSchool = async () => {
+			if (schoolId) { setEffectiveSchoolId(schoolId); return; }
+			try {
+				const me = await apiRequest<{ success: boolean; user: any }>("/auth/me");
+				const sid = me?.user?.schoolId || null;
+				if (sid) {
+					setEffectiveSchoolId(sid);
+					try { localStorage.setItem('user', JSON.stringify(me.user)); } catch {}
+				}
+			} catch {
+				setEffectiveSchoolId(null);
+			}
+		};
+		resolveSchool();
+	}, [schoolId]);
+
 	const fetchData = async () => {
-		if (!schoolId) return;
-		const list = await apiRequest<{ success: boolean; data: any[] }>(`/classes?schoolId=${schoolId}`);
+		if (!effectiveSchoolId) return;
+		const list = await apiRequest<{ success: boolean; data: any[] }>(`/classes?schoolId=${effectiveSchoolId}`);
 		setClasses(list.data as any);
-		const t = await apiRequest<{ success: boolean; data: any[] }>(`/classes/teachers?schoolId=${schoolId}`);
+		const t = await apiRequest<{ success: boolean; data: any[] }>(`/classes/teachers?schoolId=${effectiveSchoolId}`);
 		setTeacherOptions(
 			(t.data || []).map((x: any) => ({ _id: x._id, name: x?.user?.profile?.name || 'Unnamed', email: x?.user?.profile?.contact?.email }))
 		);
+		const s = await apiRequest<{ success: boolean; data: any[] }>(`/classes/unassigned?schoolId=${effectiveSchoolId}`);
+		setUnassigned((s.data || []).map((u: any) => ({ _id: u._id, name: u.name, admissionNumber: u.academicInfo?.admissionNumber })));
 	};
 
-	useEffect(() => { fetchData(); }, [schoolId]);
+	useEffect(() => { fetchData(); }, [effectiveSchoolId]);
 
 	// Show helper text when no teachers
 	const teacherHelp = teacherOptions.length === 0 ? 'No teachers found for this school. Register teachers first.' : '';
@@ -39,10 +65,10 @@ export default function ClassesPage() {
 	const [form, setForm] = useState({ name: "", grade: "", section: "", capacity: 40, teacherIds: [] as string[] });
 
 	const submit = async () => {
-		if (!schoolId) { toast({ title: 'Missing school', description: 'No school found for user.' }); return; }
+		if (!effectiveSchoolId) { toast({ title: 'Missing school', description: 'No school found for user.' }); return; }
 		setLoading(true);
 		try {
-			const payload = { ...form, schoolId };
+			const payload = { ...form, schoolId: effectiveSchoolId };
 			const token = ((): string | undefined => { try { return localStorage.getItem('token') || undefined; } catch { return undefined; } })();
 			const res = await apiRequest<{ success: boolean; data: any }>(`/classes`, { method: 'POST', body: JSON.stringify(payload), token });
 			toast({ title: 'Class created', description: res.data?.name });
@@ -76,6 +102,7 @@ export default function ClassesPage() {
 										<div className="font-medium">{c.name} — {c.grade}-{c.section}</div>
 										<div className="text-sm text-muted-foreground">Capacity {c.capacity}</div>
 									</div>
+									<Button variant="outline" onClick={() => { setAssignClassId(c._id); setAssignOpen(true); }}>Add Students</Button>
 								</div>
 							))}
 						</div>
@@ -114,6 +141,40 @@ export default function ClassesPage() {
 					<DialogFooter>
 						<Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
 						<Button onClick={submit} disabled={loading}>{loading ? 'Saving...' : 'Save Class'}</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Assign Students Dialog */}
+			<Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+				<DialogContent className="sm:max-w-[600px]">
+					<DialogHeader>
+						<DialogTitle>Assign Students</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-3 py-2">
+						<div className="text-sm text-muted-foreground">Only students without a class are shown.</div>
+						<select multiple className="border rounded-md p-2 h-64"
+							value={selectedStudents}
+							onChange={(e) => setSelectedStudents(Array.from(e.target.selectedOptions).map(o => o.value))}
+						>
+							{unassigned.map(s => (
+								<option key={s._id} value={s._id}>{s.name}{s.admissionNumber ? ` (${s.admissionNumber})` : ''}</option>
+							))}
+						</select>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={() => setAssignOpen(false)}>Cancel</Button>
+						<Button onClick={async () => {
+							if (!assignClassId || selectedStudents.length === 0) return;
+							try {
+								await apiRequest(`/classes/${assignClassId}/assign-students`, { method: 'POST', body: JSON.stringify({ studentIds: selectedStudents }) });
+								setAssignOpen(false);
+								setSelectedStudents([]);
+								fetchData();
+							} catch (e: any) {
+								toast({ title: 'Failed to assign', description: e.message });
+							}
+						}}>Assign</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

@@ -4,6 +4,7 @@ const { auth } = require('../middleware/auth');
 const { handleValidationErrors: validate } = require('../middleware/validation');
 const ClassModel = require('../models/Class');
 const Teacher = require('../models/Teacher');
+const Student = require('../models/Student');
 const mongoose = require('mongoose');
 
 const router = express.Router();
@@ -57,6 +58,42 @@ router.post('/', [
 	} catch (err) {
 		next(err);
 	}
+});
+
+// POST /api/classes/:id/assign-students
+router.post('/:id/assign-students', [
+    auth,
+    param('id').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid class id required'),
+    body('studentIds').isArray({ min: 1 }).withMessage('studentIds array required'),
+    validate
+], async (req, res, next) => {
+    try {
+        const classId = req.params.id;
+        const { studentIds } = req.body;
+        // Assign class to students
+        await Student.updateMany({ _id: { $in: studentIds } }, { $set: { classId } });
+        // Add student ids to class (avoid duplicates)
+        await ClassModel.updateOne({ _id: classId }, { $addToSet: { studentIds: { $each: studentIds } } });
+
+        const updated = await Student.find({ _id: { $in: studentIds } }).select('_id name classId');
+        res.json({ success: true, data: updated });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// GET /api/classes/unassigned-students?schoolId=...
+router.get('/unassigned', [
+    query('schoolId').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid schoolId is required'),
+    validate
+], async (req, res, next) => {
+    try {
+        const { schoolId } = req.query;
+        const students = await Student.find({ schoolId, classId: null, isActive: true }).select('_id name academicInfo.admissionNumber');
+        res.json({ success: true, data: students });
+    } catch (err) {
+        next(err);
+    }
 });
 
 module.exports = router;

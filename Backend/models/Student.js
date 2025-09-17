@@ -21,7 +21,12 @@ const studentSchema = new mongoose.Schema({
   classId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Class',
-    required: [true, 'Class reference is required']
+    default: null
+  },
+  schoolId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'School',
+    default: null
   },
   rfidTag: {
     type: String,
@@ -101,6 +106,7 @@ const studentSchema = new mongoose.Schema({
 
 // Indexes for better query performance (non-duplicate with schema unique fields)
 studentSchema.index({ classId: 1 });
+studentSchema.index({ schoolId: 1 });
 studentSchema.index({ parentIds: 1 });
 studentSchema.index({ status: 1 });
 
