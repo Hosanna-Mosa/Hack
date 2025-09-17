@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const parentSchema = new mongoose.Schema({
   name: {
@@ -24,6 +25,10 @@ const parentSchema = new mongoose.Schema({
     type: String,
     default: 'parent123'
   },
+  isDefaultPassword: {
+    type: Boolean,
+    default: true
+  },
   studentIds: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Student',
@@ -41,6 +46,24 @@ const parentSchema = new mongoose.Schema({
 parentSchema.index({ mobile: 1 });
 parentSchema.index({ email: 1 });
 parentSchema.index({ studentIds: 1 });
+
+// Hash password before saving
+parentSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
+  
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Compare password method
+parentSchema.methods.comparePassword = async function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
 module.exports = mongoose.model('Parent', parentSchema);
 

@@ -3,6 +3,7 @@ const authRoutes = require('./auth');
 const studentRoutes = require('./students');
 const attendanceRoutes = require('./attendance');
 const classRoutes = require('./classes');
+const parentRoutes = require('./parents');
 const { health } = require('../controllers/healthController');
 
 const router = express.Router();
@@ -15,5 +16,6 @@ router.use('/auth', authRoutes);
 router.use('/students', studentRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/classes', classRoutes);
+router.use('/parents', parentRoutes);
 
 module.exports = router;
