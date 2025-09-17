@@ -3,17 +3,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, School, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, School, Lock, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import heroImage from "@/assets/parent-portal-hero.jpg";
 
 interface LoginFormProps {
-  onLogin: (credentials: { email: string; password: string }) => void;
+  onLogin: (credentials: { mobile: string; password: string }) => void;
   isLoading?: boolean;
 }
 
 export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
@@ -21,16 +21,16 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!mobile || !password) {
       toast({
         title: "Missing Information",
-        description: "Please enter both email and password.",
+        description: "Please enter both mobile number and password.",
         variant: "destructive",
       });
       return;
     }
 
-    onLogin({ email, password });
+    onLogin({ mobile, password });
   };
 
   return (
@@ -78,15 +78,15 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="mobile">Mobile Number</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="parent@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="mobile"
+                    type="tel"
+                    placeholder="+91 9876543210"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
                     className="pl-10"
                     disabled={isLoading}
                     required
