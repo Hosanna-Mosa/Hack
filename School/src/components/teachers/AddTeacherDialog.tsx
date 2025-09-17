@@ -25,14 +25,15 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    mobile: ""
+    mobile: "",
+    password: ""
   });
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.mobile) {
+    if (!formData.name || !formData.email || !formData.mobile || !formData.password) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -56,6 +57,7 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
           name: formData.name,
           email: formData.email,
           mobile: formData.mobile,
+          password: formData.password,
           schoolId
         })
       });
@@ -66,7 +68,7 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
       });
 
       // Reset form and close dialog
-      setFormData({ name: "", email: "", mobile: "" });
+      setFormData({ name: "", email: "", mobile: "", password: "" });
       setOpen(false);
       onTeacherAdded();
     } catch (error: any) {
@@ -133,6 +135,17 @@ export function AddTeacherDialog({ onTeacherAdded }: AddTeacherDialogProps) {
                 value={formData.mobile}
                 onChange={(e) => handleInputChange('mobile', e.target.value)}
                 placeholder="Enter teacher's mobile number"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange('password', e.target.value)}
+                placeholder="Set a temporary password (min 6 chars)"
                 required
               />
             </div>
