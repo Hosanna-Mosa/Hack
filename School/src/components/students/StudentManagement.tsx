@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { apiRequest } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock student data

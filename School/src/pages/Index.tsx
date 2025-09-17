@@ -5,7 +5,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Students from "./Students";
 import ClassesPage from "./Classes";
 import { TeacherManagement } from "@/components/teachers/TeacherManagement";
-import { apiRequest } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
 
 const Index = () => {
   const [user, setUser] = useState<{name: string; email: string; role: string} | null>(null);

@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "embed": "node scripts/embed.js",
-    "embed:image": "node scripts/embed-image.js"
+    "embed:image": "node scripts/embed-image.js",
+    "seed:parent": "node scripts/seed-parent.js"
   },
   "keywords": [
     "school",
