@@ -22,8 +22,9 @@ export default function ClassesPage() {
 	const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 	const [moreOpen, setMoreOpen] = useState(false);
 	const [moreClassId, setMoreClassId] = useState<string | null>(null);
-	const [removeOpen, setRemoveOpen] = useState(false);
-	const [classStudents, setClassStudents] = useState<StudentItem[]>([]);
+const [removeOpen, setRemoveOpen] = useState(false);
+const [classStudents, setClassStudents] = useState<StudentItem[]>([]);
+const [viewOpen, setViewOpen] = useState(false);
 	const [studentsToRemove, setStudentsToRemove] = useState<string[]>([]);
 	const { toast } = useToast();
 
@@ -102,17 +103,17 @@ export default function ClassesPage() {
 						<div className="text-muted-foreground">No classes yet.</div>
 					) : (
 						<div className="grid gap-3">
-							{classes.map((c) => (
-								<div key={c._id} className="border rounded-md p-3 flex items-center justify-between">
-									<div>
-										<div className="font-medium">{c.name} — {c.grade}-{c.section}</div>
-										<div className="text-sm text-muted-foreground">Capacity {c.capacity}</div>
-									</div>
-							<Button variant="ghost" size="icon" aria-label="More options" onClick={() => { setMoreClassId(c._id); setMoreOpen(true); }}>
-								<MoreHorizontal className="h-5 w-5" />
-							</Button>
+						{classes.map((c) => (
+							<div key={c._id} className="border rounded-md p-3 flex items-center justify-between">
+								<div>
+									<div className="font-medium">{c.name} — {c.grade}-{c.section}</div>
+									<div className="text-xs text-muted-foreground">Students {((c as any)?.currentStudentCount ?? (c as any)?.studentIds?.length ?? 0)} • Capacity {c.capacity}</div>
 								</div>
-							))}
+						<Button variant="ghost" size="icon" aria-label="More options" onClick={() => { setMoreClassId(c._id); setMoreOpen(true); }}>
+							<MoreHorizontal className="h-5 w-5" />
+						</Button>
+							</div>
+						))}
 						</div>
 					)}
 				</CardContent>
@@ -189,11 +190,11 @@ export default function ClassesPage() {
 
 			{/* More Options Dialog */}
 			<Dialog open={moreOpen} onOpenChange={setMoreOpen}>
-				<DialogContent className="sm:max-w-[520px]">
+				<DialogContent className="sm:max-w-[560px]">
 					<DialogHeader>
 						<DialogTitle>Class Options</DialogTitle>
 					</DialogHeader>
-					<div className="grid gap-4 py-2">
+					<div className="grid gap-5 py-2">
 						{/* Quick stats */}
 						{(() => {
 							const current = classes.find(x => x._id === moreClassId);
@@ -202,14 +203,14 @@ export default function ClassesPage() {
 								.filter(Boolean)
 								.join(", ") || "Unassigned";
 							// student count might not be available on the class item
-							const studentCount = (current as any)?.studentCount ?? "N/A";
+							const studentCount = (current as any)?.currentStudentCount ?? (current as any)?.studentIds?.length ?? "N/A";
 							return (
-								<div className="rounded-md border p-3 text-sm">
+								<div className="rounded-lg border p-4 text-sm bg-muted/20">
 									<div className="flex items-center justify-between">
 										<span className="text-muted-foreground">No. of students</span>
-										<span className="font-medium">{studentCount}</span>
+										<span className="font-semibold">{studentCount}</span>
 									</div>
-									<div className="mt-2 flex items-start justify-between gap-3">
+									<div className="mt-3 flex items-start justify-between gap-3">
 										<span className="text-muted-foreground">Assigned teacher</span>
 										<span className="font-medium text-right">{teacherNames}</span>
 									</div>
@@ -217,13 +218,24 @@ export default function ClassesPage() {
 							);
 						})()}
 
-						<div className="flex items-center gap-2">
+						<div className="flex flex-wrap items-center gap-2">
 							<Button onClick={() => {
 								if (!moreClassId) return;
 								setMoreOpen(false);
 								setAssignClassId(moreClassId);
 								setAssignOpen(true);
 							}}>Add Students</Button>
+							<Button variant="secondary" onClick={async () => {
+								if (!moreClassId) return;
+								try {
+									const res = await apiRequest<{ success: boolean; data: any[] }>(`/classes/${moreClassId}/students`);
+									setClassStudents((res.data || []).map((s: any) => ({ _id: s._id, name: s.name, admissionNumber: s.academicInfo?.admissionNumber })));
+									setViewOpen(true);
+									setMoreOpen(false);
+								} catch (e: any) {
+									toast({ title: 'Failed to load students', description: e.message });
+								}
+							}}>View Students</Button>
 							<Button variant="outline" onClick={async () => {
 								if (!moreClassId) return;
 								try {
@@ -274,6 +286,36 @@ export default function ClassesPage() {
 								toast({ title: 'Failed to remove', description: e.message });
 							}
 						}}>Remove Selected</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* View Students Dialog */}
+			<Dialog open={viewOpen} onOpenChange={setViewOpen}>
+				<DialogContent className="sm:max-w-[640px]">
+					<DialogHeader>
+						<DialogTitle>Class Students</DialogTitle>
+					</DialogHeader>
+					<div className="max-h-[60vh] overflow-auto rounded-md border">
+						<div className="grid grid-cols-[1fr_auto] gap-x-4 text-sm p-3 sticky top-0 bg-background border-b font-medium">
+							<span>Name</span>
+							<span className="text-right">Adm. No.</span>
+						</div>
+						<div className="divide-y">
+							{classStudents.length === 0 ? (
+								<div className="p-4 text-sm text-muted-foreground">No students in this class.</div>
+							) : (
+								classStudents.map(s => (
+									<div key={s._id} className="grid grid-cols-[1fr_auto] gap-x-4 p-3 text-sm">
+										<span>{s.name}</span>
+										<span className="text-right">{s.admissionNumber || '-'}</span>
+									</div>
+								))
+							)}
+						</div>
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={() => setViewOpen(false)}>Close</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
