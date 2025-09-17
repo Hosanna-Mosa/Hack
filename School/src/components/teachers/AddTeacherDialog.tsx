@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { apiRequest } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddTeacherDialogProps {

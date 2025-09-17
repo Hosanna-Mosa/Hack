@@ -101,7 +101,8 @@ exports.login = async (req, res, next) => {
   try {
     const { username, password, role } = req.body;
 
-    const user = await User.findOne({ username });
+    const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
+    const user = await User.findOne({ username: normalizedUsername });
     if (!user) {
       return res.status(400).json({ success: false, message: 'Invalid credentials' });
     }
@@ -127,7 +128,7 @@ exports.login = async (req, res, next) => {
       const school = await School.findOne({ adminIds: user._id }).select('_id');
       schoolId = school?._id || null;
     } else if (user.role === 'teacher') {
-      const teacher = await (await require('../models/Teacher').findOne({ userId: user._id }).select('schoolId'));
+      const teacher = await require('../models/Teacher').findOne({ userId: user._id }).select('schoolId');
       schoolId = teacher?.schoolId || null;
     }
 

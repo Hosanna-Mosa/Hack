@@ -3,6 +3,7 @@ import { LoginForm } from "./auth/LoginForm";
 import { ParentDashboard } from "./dashboard/ParentDashboard";
 import { PasswordChangeDialog } from "./auth/PasswordChangeDialog";
 import { useToast } from "@/hooks/use-toast";
+import ParentAPI from "@/lib/api";
 
 interface User {
   id: string;
@@ -73,33 +74,21 @@ export function ParentPortalApp() {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5000/api/parents/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      const data = await ParentAPI.login(credentials);
 
       if (data.success) {
         const userData: User = {
-          id: data.parent._id,
-          mobile: data.parent.mobile,
-          name: data.parent.name,
-          email: data.parent.email,
-          isDefaultPassword: data.parent.isDefaultPassword,
-          studentIds: data.parent.studentIds
+          id: (data as any).parent._id,
+          mobile: (data as any).parent.mobile,
+          name: (data as any).parent.name,
+          email: (data as any).parent.email,
+          isDefaultPassword: (data as any).parent.isDefaultPassword,
+          studentIds: (data as any).parent.studentIds
         };
         
         setUser(userData);
         localStorage.setItem("parentPortalUser", JSON.stringify(userData));
-        localStorage.setItem("parentToken", data.token);
+        localStorage.setItem("parentToken", (data as any).token);
         
         toast({
           title: "Welcome back!",
@@ -107,7 +96,7 @@ export function ParentPortalApp() {
         });
 
         // Check if user needs to change password
-        if (data.parent.isDefaultPassword) {
+        if ((data as any).parent.isDefaultPassword) {
           setShowPasswordChangeDialog(true);
         }
       } else {
@@ -139,21 +128,7 @@ export function ParentPortalApp() {
     setIsChangingPassword(true);
     
     try {
-      const token = localStorage.getItem("parentToken");
-      const response = await fetch('http://localhost:5000/api/parents/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ newPassword, confirmPassword }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Password change failed');
-      }
+      const data = await ParentAPI.changePassword({ newPassword, confirmPassword });
 
       if (data.success) {
         toast({
