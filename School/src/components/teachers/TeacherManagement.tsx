@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { apiRequest } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
 import { AddTeacherDialog } from "./AddTeacherDialog";
 
 interface TeacherRow {

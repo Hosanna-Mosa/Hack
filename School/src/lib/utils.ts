@@ -5,6 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+
 // Simple JSON fetch wrapper for backend API
 export async function apiRequest<T>(
   path: string,

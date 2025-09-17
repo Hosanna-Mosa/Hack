@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { apiRequest } from "@/lib/utils";
+import { apiRequest } from "@/lib/api";
 
 interface MainLayoutProps {
   children: React.ReactNode;

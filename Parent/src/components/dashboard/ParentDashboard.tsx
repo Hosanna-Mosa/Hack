@@ -21,6 +21,7 @@ import {
 import { AttendanceCalendar } from "./AttendanceCalendar";
 import { NotificationPanel } from "./NotificationPanel";
 import { useToast } from "@/hooks/use-toast";
+import ParentAPI from "@/lib/api";
 
 interface Student {
   _id: string;
@@ -104,14 +105,7 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
   useEffect(() => {
     const fetchParentData = async () => {
       try {
-        const token = localStorage.getItem("parentToken");
-        const response = await fetch('http://localhost:5000/api/parents/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
+        const data = await ParentAPI.getProfile();
 
         if (data.success) {
           setStudents(data.data.studentIds || []);
@@ -144,14 +138,7 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
   const fetchAttendanceData = async (studentId: string) => {
     try {
-      const token = localStorage.getItem("parentToken");
-      const response = await fetch(`http://localhost:5000/api/parents/students/${studentId}/attendance`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
+      const data = await ParentAPI.getStudentAttendance(studentId);
 
       if (data.success) {
         setAttendanceStats(data.data.attendanceStats);

@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 
 // Prefer env var, fallback to current hardcoded URI for now
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://sunandvemavarapu_db_user:wqr25yDcKahqsueS@attedence.mlkqvap.mongodb.net/";
+const MONGODB_URI = "mongodb+srv://sunandvemavarapu_db_user:wqr25yDcKahqsueS@attedence.mlkqvap.mongodb.net/";
+
+
 
 // Reduce Mongoose internal debug noise
 mongoose.set('debug', false);
