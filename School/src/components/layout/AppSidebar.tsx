@@ -46,6 +46,12 @@ const menuItems = [
     description: "Manage classes & assignments"
   },
   {
+    title: "Photos",
+    url: "/photos",
+    icon: Users,
+    description: "Add & compare photos"
+  },
+  {
     title: "Teachers",
     url: "/teachers",
     icon: GraduationCap,

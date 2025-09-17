@@ -53,6 +53,49 @@ export const SchoolAPI = {
     const query = params ? `?${new URLSearchParams(params).toString()}` : "";
     return apiRequest(`/students${query}`);
   },
+  // Embeddings endpoints
+  async upsertImageEmbeddingMultipart(payload: { sourceId: string; file: File; metadata?: any }) {
+    const token = getToken();
+    const form = new FormData();
+    form.append('sourceId', payload.sourceId);
+    if (payload.metadata) form.append('metadata', JSON.stringify(payload.metadata));
+    form.append('image', payload.file);
+
+    const res = await fetch(`${API_BASE_URL}/embeddings/image`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      } as any,
+      body: form,
+      credentials: 'include'
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.message || 'Failed to upload image');
+    return json as ApiResponse<{ id: string; dims: number }>;
+  },
+  async compareImageMultipart(file: File, options?: { threshold?: number }) {
+    const token = getToken();
+    const form = new FormData();
+    if (options?.threshold !== undefined) form.append('threshold', String(options.threshold));
+    form.append('image', file);
+    const res = await fetch(`${API_BASE_URL}/embeddings/compare`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      } as any,
+      body: form,
+      credentials: 'include'
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.message || 'Failed to compare image');
+    return json as ApiResponse<{ matched: boolean; bestMatch: any; threshold: number }>;
+  },
+  async compareStored(sourceIdA: string, sourceIdB: string, options?: { threshold?: number }) {
+    return apiRequest<{ matched: boolean; cosine: number; normDistance: number; threshold: number }>(`/embeddings/compare-stored`, {
+      method: 'POST',
+      body: JSON.stringify({ sourceIdA, sourceIdB, threshold: options?.threshold ?? 0.9, sourceType: 'image' })
+    });
+  }
 };
 
 export default SchoolAPI;

@@ -4,6 +4,7 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Routes, Route, Navigate } from "react-router-dom";
 import Students from "./Students";
 import ClassesPage from "./Classes";
+import PhotosPage from "./Photos";
 import { TeacherManagement } from "@/components/teachers/TeacherManagement";
 import { apiRequest } from "@/lib/api";
 
@@ -41,6 +42,7 @@ const Index = () => {
         <Route path="/students" element={<Students />} />
         <Route path="/attendance" element={<div className="p-8 text-center text-muted-foreground">Attendance management coming soon...</div>} />
         <Route path="/classes" element={<ClassesPage />} />
+        <Route path="/photos" element={<PhotosPage />} />
         <Route path="/teachers" element={<TeacherManagement />} />
         <Route path="/reports" element={<div className="p-8 text-center text-muted-foreground">Reports & analytics coming soon...</div>} />
         <Route path="/communication" element={<div className="p-8 text-center text-muted-foreground">Communication hub coming soon...</div>} />
