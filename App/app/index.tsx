@@ -119,7 +119,7 @@ export default function IndexScreen() {
               >
                 <Sparkles size={24} color="#fbbf24" />
               </Animated.View>
-              <Text style={styles.mainTitle}>School Attendance</Text>
+              <Text style={styles.mainTitle}>School Attendance </Text>
               <Animated.View
                 style={[styles.sparkleContainer, { opacity: sparkleOpacity }]}
               >
