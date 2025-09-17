@@ -28,6 +28,19 @@ router.post('/', [
   handleValidationErrors
 ], auth, authorize('teacher', 'admin'), attendanceController.createAttendance);
 
+// @route   POST /api/attendance/batch
+// @desc    Mark attendance in batch
+// @access  Private (Teacher, Admin)
+router.post('/batch', [
+  body('records').isArray({ min: 1 }).withMessage('records array is required'),
+  body('records.*.date').isISO8601().withMessage('Valid date is required'),
+  body('records.*.classId').isMongoId().withMessage('Valid class ID is required'),
+  body('records.*.studentId').isMongoId().withMessage('Valid student ID is required'),
+  body('records.*.status').isIn(['present', 'absent', 'late', 'excused']).withMessage('Invalid status'),
+  body('records.*.method').isIn(['face', 'rfid', 'id', 'manual']).withMessage('Invalid method'),
+  handleValidationErrors
+], auth, authorize('teacher', 'admin'), attendanceController.createAttendanceBatch);
+
 // @route   PUT /api/attendance/:id
 // @desc    Update attendance record
 // @access  Private (Teacher, Admin)

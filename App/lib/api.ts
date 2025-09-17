@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Base API configuration
 const API_BASE_URL = __DEV__
-  ? "http://localhost:8000/api"
+  ? "http://:8000/api"
   : "https://your-production-api.com/api";
 
 // API Response types
@@ -241,6 +241,21 @@ export const AttendanceAPI = {
     });
   },
 
+  // Batch mark attendance
+  async markAttendanceBatch(records: Array<{
+    studentId: string;
+    classId: string;
+    status: "present" | "absent" | "late" | "excused";
+    date: string;
+    method: "face" | "rfid" | "id" | "manual";
+    notes?: string;
+  }>): Promise<ApiResponse<{ inserted: number; partial?: boolean }>> {
+    return apiRequest("/attendance/batch", {
+      method: "POST",
+      body: JSON.stringify({ records }),
+    });
+  },
+
   // Update attendance
   async updateAttendance(
     attendanceId: string,
@@ -364,6 +379,21 @@ export const HealthAPI = {
   },
 };
 
+// Embeddings/Face API services
+export const EmbeddingsAPI = {
+  // Compare a captured face image against stored embeddings
+  async compareFace(options: {
+    imageBase64: string; // data URL or raw base64
+    threshold?: number;
+    sourceType?: string; // e.g., 'student-face'
+  }): Promise<ApiResponse<{ matched: boolean; bestMatch?: any; threshold: number }>> {
+    return apiRequest("/embeddings/compare", {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
+  },
+};
+
 // Export all APIs
 export const API = {
   auth: AuthAPI,
@@ -372,6 +402,7 @@ export const API = {
   students: StudentsAPI,
   classes: ClassesAPI,
   health: HealthAPI,
+  embeddings: EmbeddingsAPI,
   tokenManager: TokenManager,
 };
 
