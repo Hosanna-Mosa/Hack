@@ -99,8 +99,6 @@ exports.register = async (req, res, next) => {
 // Login existing user
 exports.login = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
-    console.log("camed to here",username,password);
     
 
     const user = await User.findOne({ username });
