@@ -29,7 +29,8 @@ app.use(helmet());
 // CORS configuration
 app.use(cors({
   origin: [
-    process.env.CORS_ORIGIN || 
+    process.env.CORS_ORIGIN ||
+    'https://hack-i6v3.onrender.com/api',
     'http://localhost:5173',
     'http://localhost:8081',
     'http://localhost:8080',
