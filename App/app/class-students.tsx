@@ -16,7 +16,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, User } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { API } from "../lib/api";
+import { API, TeacherAPI } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
 
 type Student = {
   id: string;
@@ -31,12 +32,22 @@ type Student = {
 export default function ClassStudentsScreen() {
   const { classId, className, studentCount } = useLocalSearchParams();
   const router = useRouter();
+  const { state } = useAuth();
+  const schoolId = (state?.user as any)?.schoolId as string | undefined;
   
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Resolve class context (fallback when opened without params)
+  const [resolvedClassId, setResolvedClassId] = useState<string | null>(
+    (classId as string) || null
+  );
+  const [resolvedClassName, setResolvedClassName] = useState<string>(
+    (className as string) || "Students"
+  );
 
   // Action sheet state
   const [actionVisible, setActionVisible] = useState(false);
@@ -82,7 +93,7 @@ export default function ClassStudentsScreen() {
           classId: classIdStr,
           status: (s.status as any) as "present" | "absent" | "late" | "excused",
           date: dateIso,
-          method: s.status === "present" ? "manual" : "manual",
+          method: ("manual" as const),
         }));
 
       if (records.length === 0) {
@@ -285,11 +296,64 @@ export default function ClassStudentsScreen() {
   const fetchStudentsData = async () => {
     try {
       setError(null);
-      
-      const response = await API.classes.getStudentsByClass(classId as string);
+      let targetClassId = resolvedClassId;
+
+      // If we don't have a classId, pick the first available class for this teacher/school
+      if (!targetClassId) {
+        const classesResp = await API.classes.getClasses(schoolId);
+        if (classesResp.success && Array.isArray(classesResp.data) && classesResp.data.length > 0) {
+          const first = (classesResp.data as any[])[0];
+          targetClassId = String(first._id || first.id);
+          setResolvedClassId(targetClassId);
+          if (!className && (first.name || first.className)) {
+            setResolvedClassName(String(first.name || first.className));
+          }
+        } else {
+          // Fallback to teacher's assigned classes
+          const assigned = await TeacherAPI.getAssignedClasses();
+          if (assigned.success && Array.isArray(assigned.data) && assigned.data.length > 0) {
+            const first = (assigned.data as any[])[0];
+            targetClassId = String(first._id || first.id);
+            setResolvedClassId(targetClassId);
+            if (!className && (first.name || first.className)) {
+              setResolvedClassName(String(first.name || first.className));
+            }
+          } else {
+            throw new Error(classesResp.message || assigned.message || "No classes found for this account");
+          }
+        }
+      }
+
+      // Validate class id shape (24-hex Mongo id). If invalid, try to resolve again.
+      const isValidObjectId = typeof targetClassId === 'string' && /^[a-fA-F0-9]{24}$/.test(targetClassId);
+      if (!isValidObjectId) {
+        const classesResp = await API.classes.getClasses(schoolId);
+        if (classesResp.success && Array.isArray(classesResp.data) && classesResp.data.length > 0) {
+          const first = (classesResp.data as any[])[0];
+          targetClassId = String(first._id || first.id);
+          setResolvedClassId(targetClassId);
+          if (!className && (first.name || first.className)) {
+            setResolvedClassName(String(first.name || first.className));
+          }
+        } else {
+          const assigned = await TeacherAPI.getAssignedClasses();
+          if (assigned.success && Array.isArray(assigned.data) && assigned.data.length > 0) {
+            const first = (assigned.data as any[])[0];
+            targetClassId = String(first._id || first.id);
+            setResolvedClassId(targetClassId);
+            if (!className && (first.name || first.className)) {
+              setResolvedClassName(String(first.name || first.className));
+            }
+          } else {
+            throw new Error(classesResp.message || assigned.message || "No classes found for this account");
+          }
+        }
+      }
+
+      const response = await API.classes.getStudentsByClass(targetClassId as string);
       
       if (response.success && response.data) {
-        setStudents(response.data);
+        setStudents(response.data as any);
       } else {
         setError(response.message || "Failed to fetch students");
       }
@@ -369,7 +433,7 @@ export default function ClassStudentsScreen() {
             >
               <ArrowLeft size={24} color="#1E40AF" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{className}</Text>
+            <Text style={styles.headerTitle}>{resolvedClassName}</Text>
             <View style={styles.placeholder} />
           </View>
           
@@ -422,7 +486,7 @@ export default function ClassStudentsScreen() {
             <ArrowLeft size={24} color="#1E40AF" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{className}</Text>
+            <Text style={styles.headerTitle}>{resolvedClassName}</Text>
             <Text style={styles.studentCount}>{studentCount} Students</Text>
           </View>
           <View style={styles.placeholder} />
