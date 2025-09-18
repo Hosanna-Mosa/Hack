@@ -5,8 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { 
   Calendar, 
-  Bell, 
-  MessageCircle, 
   Clock, 
   CheckCircle, 
   XCircle, 
@@ -19,7 +17,6 @@ import {
   Loader2
 } from "lucide-react";
 import { AttendanceCalendar } from "./AttendanceCalendar";
-import { NotificationPanel } from "./NotificationPanel";
 import { useToast } from "@/hooks/use-toast";
 import ParentAPI from "@/lib/api";
 
@@ -93,7 +90,7 @@ interface ParentDashboardProps {
 }
 
 export function ParentDashboard({ onLogout }: ParentDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "calendar" | "notifications">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "calendar">("overview");
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [attendanceStats, setAttendanceStats] = useState<AttendanceStats | null>(null);
@@ -198,12 +195,6 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <MessageCircle className="w-5 h-5" />
-              </Button>
               <Button variant="ghost" size="icon" onClick={onLogout}>
                 <LogOut className="w-5 h-5" />
               </Button>
@@ -283,17 +274,6 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
           >
             <Calendar className="w-4 h-4 mr-2 inline" />
             Calendar
-          </button>
-          <button
-            onClick={() => setActiveTab("notifications")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-              activeTab === "notifications" 
-                ? "bg-card text-primary shadow-design-sm" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Bell className="w-4 h-4 mr-2 inline" />
-            Notifications
           </button>
         </div>
 
@@ -488,10 +468,6 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
                       </div>
                     </div>
 
-                    <Button variant="outline" className="w-full">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Contact Teacher
-                    </Button>
                   </>
                 )}
                 
@@ -602,39 +578,10 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
               </CardContent>
             </Card>
 
-            {/* Upcoming Events */}
-            <Card className="lg:col-span-3 shadow-design-md border-0">
-              <CardHeader>
-                <CardTitle>Upcoming School Events</CardTitle>
-                <CardDescription>Important dates and events</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {upcomingEvents.map((event, index) => (
-                    <div key={index} className="p-4 border rounded-lg hover:shadow-design-sm transition-shadow">
-                      <div className="flex items-start space-x-3">
-                        <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                          <Calendar className="w-5 h-5 text-accent" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium">{event.event}</h4>
-                          <p className="text-sm text-muted-foreground">{event.date}</p>
-                          <p className="text-sm text-muted-foreground flex items-center mt-1">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {event.time}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
 
         {activeTab === "calendar" && <AttendanceCalendar />}
-        {activeTab === "notifications" && <NotificationPanel />}
       </div>
     </div>
   );

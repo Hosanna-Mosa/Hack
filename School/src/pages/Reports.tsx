@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { SchoolAPI } from "@/lib/api";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
 
 type Stat = { _id: string; count: number };
 
@@ -98,6 +99,48 @@ export default function ReportsPage() {
   const late = stats.find(s => s._id === 'late')?.count || 0;
   const absent = (stats.find(s => s._id === 'absent')?.count || 0) + (stats.find(s => s._id === 'excused')?.count || 0);
   const rate = useMemo(() => total ? ((present / total) * 100).toFixed(1) : '0.0', [present, total]);
+  const [weeklySeries, setWeeklySeries] = useState<any[]>([]);
+  const [classFillSeries, setClassFillSeries] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadCharts = async () => {
+      try {
+        // Weekly series
+        const days: any[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          const dayStr = d.toISOString().slice(0,10);
+          try {
+            const r = await SchoolAPI.getAttendance({ date: dayStr });
+            const list = (r.data as any[]) || [];
+            const present = list.filter(x => x.status === 'present').length;
+            days.push({ day: dayStr.slice(5), present });
+          } catch { days.push({ day: dayStr.slice(5), present: 0 }); }
+        }
+        setWeeklySeries(days);
+
+        // Today by class
+        const todayStr = new Date().toISOString().slice(0,10);
+        const res = await SchoolAPI.getAttendance({ date: todayStr });
+        const list = (res.data as any[]) || [];
+        const byClass: Record<string, { name: string; present: number; total: number }> = {};
+        for (const rec of list) {
+          const cls = (rec as any).classId || {};
+          const name = `${cls.name || ''} ${cls.grade || ''}${cls.section ? '-' + cls.section : ''}`.trim() || 'Class';
+          const key = cls._id || name;
+          if (!byClass[key]) byClass[key] = { name, present: 0, total: 0 };
+          byClass[key].total += 1;
+          if ((rec as any).status === 'present') byClass[key].present += 1;
+        }
+        const classSeries = Object.values(byClass)
+          .sort((a,b) => b.total - a.total)
+          .slice(0, 8)
+          .map(c => ({ name: c.name, students: c.present }));
+        setClassFillSeries(classSeries);
+      } catch {}
+    };
+    loadCharts();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -164,6 +207,39 @@ export default function ReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Moved charts from Dashboard */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader><CardTitle>7-Day Attendance Trend</CardTitle></CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklySeries} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                <Tooltip />
+                <Line type="monotone" dataKey="present" stroke="#2563eb" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle>Top Classes by Students</CardTitle></CardHeader>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={classFillSeries} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} height={50} />
+                <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="students" fill="#10b981" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

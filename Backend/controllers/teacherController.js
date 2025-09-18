@@ -112,20 +112,41 @@ const updateTeacher = async (req, res, next) => {
   }
 };
 
-// Delete teacher (soft delete, admin)
+// Delete teacher
+// By default performs a soft delete (sets isActive=false on Teacher and User)
+// Pass query hard=true to permanently remove Teacher and linked User and pull from classes
 const deleteTeacher = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { hard } = req.query || {};
     const teacher = await Teacher.findById(id);
     if (!teacher) {
       return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
 
-    teacher.isActive = false;
-    await teacher.save();
-    await User.findByIdAndUpdate(teacher.userId, { isActive: false });
+    const isHardDelete = String(hard).toLowerCase() === 'true';
 
-    res.json({ success: true, message: 'Teacher deleted successfully' });
+    if (!isHardDelete) {
+      // Soft delete
+      teacher.isActive = false;
+      await teacher.save();
+      await User.findByIdAndUpdate(teacher.userId, { isActive: false });
+      return res.json({ success: true, message: 'Teacher soft-deleted successfully' });
+    }
+
+    // Hard delete: remove teacher, unlink from classes, and delete linked user
+    const userId = teacher.userId;
+
+    // Pull from any classes' teacherIds
+    await Class.updateMany({ teacherIds: id }, { $pull: { teacherIds: id } });
+
+    // Remove teacher document
+    await Teacher.deleteOne({ _id: id });
+
+    // Remove user document (optional if you want to keep User record; here we remove)
+    await User.deleteOne({ _id: userId });
+
+    res.json({ success: true, message: 'Teacher hard-deleted successfully' });
   } catch (error) {
     next(error);
   }

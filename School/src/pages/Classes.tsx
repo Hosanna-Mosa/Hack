@@ -26,6 +26,9 @@ const [removeOpen, setRemoveOpen] = useState(false);
 const [classStudents, setClassStudents] = useState<StudentItem[]>([]);
 const [viewOpen, setViewOpen] = useState(false);
 	const [studentsToRemove, setStudentsToRemove] = useState<string[]>([]);
+	const [teacherAssignOpen, setTeacherAssignOpen] = useState(false);
+	const [teacherAssignClassId, setTeacherAssignClassId] = useState<string | null>(null);
+	const [selectedTeachers, setSelectedTeachers] = useState<string[]>([]);
 	const { toast } = useToast();
 
 	// crude user schoolId retrieval from localStorage if present
@@ -199,7 +202,14 @@ const [viewOpen, setViewOpen] = useState(false);
 						{(() => {
 							const current = classes.find(x => x._id === moreClassId);
 							const teacherNames = (current?.teacherIds || [])
-								.map(tid => teacherOptions.find(t => t._id === tid)?.name)
+								.map(teacher => {
+									// Handle both populated teacher objects and simple IDs
+									if (typeof teacher === 'object' && teacher.user) {
+										return teacher.user.profile?.name || 'Unnamed';
+									} else {
+										return teacherOptions.find(t => t._id === teacher)?.name;
+									}
+								})
 								.filter(Boolean)
 								.join(", ") || "Unassigned";
 							// student count might not be available on the class item
@@ -248,6 +258,21 @@ const [viewOpen, setViewOpen] = useState(false);
 									toast({ title: 'Failed to load students', description: e.message });
 								}
 							}}>Delete Students</Button>
+							<Button variant="secondary" onClick={() => {
+								if (!moreClassId) return;
+								const currentClass = classes.find(c => c._id === moreClassId);
+								// Extract teacher IDs from populated teacher objects or simple IDs
+								const teacherIds = (currentClass?.teacherIds || []).map(teacher => {
+									if (typeof teacher === 'object' && teacher._id) {
+										return teacher._id;
+									}
+									return teacher;
+								});
+								setSelectedTeachers(teacherIds);
+								setTeacherAssignClassId(moreClassId);
+								setMoreOpen(false);
+								setTeacherAssignOpen(true);
+							}}>Edit Teacher</Button>
 						</div>
 					</div>
 					<DialogFooter>
@@ -316,6 +341,66 @@ const [viewOpen, setViewOpen] = useState(false);
 					</div>
 					<DialogFooter>
 						<Button variant="ghost" onClick={() => setViewOpen(false)}>Close</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Teacher Assignment Dialog */}
+			<Dialog open={teacherAssignOpen} onOpenChange={setTeacherAssignOpen}>
+				<DialogContent className="sm:max-w-[500px]">
+					<DialogHeader>
+						<DialogTitle>Assign Teachers to Class</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4">
+						<div className="text-sm text-muted-foreground">
+							Select teachers to assign to this class. You can select multiple teachers.
+						</div>
+						<div className="space-y-2 max-h-60 overflow-y-auto">
+							{teacherOptions.map((teacher) => (
+								<div key={teacher._id} className="flex items-center space-x-2">
+									<input
+										type="checkbox"
+										id={`teacher-${teacher._id}`}
+										checked={selectedTeachers.includes(teacher._id)}
+										onChange={(e) => {
+											if (e.target.checked) {
+												setSelectedTeachers(prev => [...prev, teacher._id]);
+											} else {
+												setSelectedTeachers(prev => prev.filter(id => id !== teacher._id));
+											}
+										}}
+										className="rounded border-gray-300"
+									/>
+									<label htmlFor={`teacher-${teacher._id}`} className="text-sm font-medium">
+										{teacher.name}
+									</label>
+									<span className="text-xs text-muted-foreground">({teacher.email})</span>
+								</div>
+							))}
+						</div>
+						{teacherOptions.length === 0 && (
+							<div className="text-center py-4 text-muted-foreground">
+								No teachers available
+							</div>
+						)}
+					</div>
+					<DialogFooter>
+						<Button variant="ghost" onClick={() => setTeacherAssignOpen(false)}>Cancel</Button>
+						<Button onClick={async () => {
+							if (!teacherAssignClassId) return;
+							try {
+								await apiRequest(`/classes/${teacherAssignClassId}/teachers`, {
+									method: 'PUT',
+									body: JSON.stringify({ teacherIds: selectedTeachers })
+								});
+								toast({ title: 'Success', description: 'Teachers assigned successfully' });
+								setTeacherAssignOpen(false);
+								// Refresh classes data
+								fetchData();
+							} catch (e: any) {
+								toast({ title: 'Failed to assign teachers', description: e.message });
+							}
+						}}>Save Changes</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

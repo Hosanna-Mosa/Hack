@@ -3,6 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/api";
 import { AddTeacherDialog } from "./AddTeacherDialog";
+import { Button } from "@/components/ui/button";
+import { Edit3, MoreHorizontal, Trash2 } from "lucide-react";
+import { EditTeacherDialog } from "./EditTeacherDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TeacherRow {
   _id: string;
@@ -14,6 +23,8 @@ interface TeacherRow {
 export function TeacherManagement() {
   const [teachers, setTeachers] = useState<TeacherRow[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<TeacherRow | null>(null);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -68,13 +79,46 @@ export function TeacherManagement() {
                       <div className="text-sm text-muted-foreground">{t.mobile}</div>
                     )}
                   </div>
-                  <Badge variant="outline">Active</Badge>
+                  <div className="flex items-center gap-2">
+                    {user?.role === 'admin' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="gap-2" onClick={() => { setEditing(t); setEditOpen(true); }}>
+                            <Edit3 className="w-4 h-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="gap-2 text-destructive" onClick={async () => {
+                            try {
+                              await apiRequest(`/teachers/${t._id}?hard=true`, { method: 'DELETE' });
+                              await loadTeachers();
+                            } catch {}
+                          }}>
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    <Badge variant="outline">Active</Badge>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      <EditTeacherDialog
+        open={editOpen}
+        onOpenChange={(v) => { setEditOpen(v); if (!v) setEditing(null); }}
+        teacher={editing}
+        onSaved={loadTeachers}
+      />
     </div>
   );
 }
