@@ -6,74 +6,81 @@ try {
 } catch (err) {
   tf = require('@tensorflow/tfjs');
 }
-const use = require('@tensorflow-models/universal-sentence-encoder');
-const mobilenet = require('@tensorflow-models/mobilenet');
-const jpeg = require('jpeg-js');
-const { PNG } = require('pngjs');
+
+// ---- Monkey patch for Node.js v22 ----
+const util = require('util');
+if (!util.isNullOrUndefined) {
+  util.isNullOrUndefined = (val) => val === null || val === undefined;
+  console.log('[patch] Added util.isNullOrUndefined for Node 22 compatibility');
+}
+
+const canvas = require('canvas');
+const faceapi = require('@vladmandic/face-api');
+const { Canvas, Image, ImageData } = canvas;
+faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+
 const Embedding = require('../models/Embedding');
 const Student = require('../models/Student');
 
-async function loadImageAsTensorFromBuffer(buffer) {
-  const sig = buffer.slice(0, 8).toString('hex');
-  const isPng = sig.startsWith('89504e47');
-  const isJpeg = sig.startsWith('ffd8');
-  let width, height, pixelsRGBA;
-  if (isJpeg) {
-    const decoded = jpeg.decode(buffer, { useTArray: true });
-    width = decoded.width;
-    height = decoded.height;
-    pixelsRGBA = decoded.data;
-  } else if (isPng) {
-    const decoded = PNG.sync.read(buffer);
-    width = decoded.width;
-    height = decoded.height;
-    pixelsRGBA = decoded.data;
-  } else {
-    throw new Error('Unsupported image format. Use JPEG or PNG');
+// Load models once at startup
+const MODEL_PATH = path.join(__dirname, '../models');
+async function loadModels() {
+  await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_PATH);
+  await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_PATH);
+  await faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_PATH);
+  console.log('[face-api] Models loaded from', MODEL_PATH);
+}
+loadModels();
+
+// Utility to load image from buffer/base64/path
+async function loadImage(buffer, base64, imagePath) {
+  let data;
+  if (buffer) {
+    data = buffer;
+  } else if (base64) {
+    const b64 = base64.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
+    data = Buffer.from(b64, 'base64');
+  } else if (imagePath) {
+    const absolute = path.resolve(process.cwd(), imagePath);
+    data = fs.readFileSync(absolute);
   }
-  const rgb = new Float32Array(width * height * 3);
-  for (let i = 0, j = 0; i < pixelsRGBA.length; i += 4, j += 3) {
-    rgb[j] = pixelsRGBA[i] / 255;
-    rgb[j + 1] = pixelsRGBA[i + 1] / 255;
-    rgb[j + 2] = pixelsRGBA[i + 2] / 255;
-  }
-  const tensor = tf.tensor3d(rgb, [height, width, 3]);
-  const resized = tf.image.resizeBilinear(tensor, [224, 224]);
-  const batched = resized.expandDims(0);
-  tensor.dispose();
-  resized.dispose();
-  return batched;
+  return await canvas.loadImage(data);
 }
 
-exports.upsertTextEmbedding = async (req, res, next) => {
-  try {
-    const { sourceId, sourceType = 'text', text, metadata } = req.body;
-    if (!sourceId || !text) {
-      return res.status(400).json({ success: false, message: 'sourceId and text are required' });
-    }
+// Extract face descriptor (128-d embedding) from image
+async function getFaceDescriptor(img) {
+  const detection = await faceapi
+    .detectSingleFace(img)
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+  if (!detection) throw new Error('No face detected in image');
+  return Array.from(detection.descriptor);
+}
 
-    const model = await use.load();
-    const embeddingTensor = await model.embed([text]);
-    const embeddingArray2D = await embeddingTensor.array();
-    const vector = embeddingArray2D[0];
-    embeddingTensor.dispose();
+// Normalize vector to unit length
+function normalizeVector(v) {
+  const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+  return v.map(x => x / (norm || 1));
+}
 
-    const payload = { sourceId, sourceType, text, vector, metadata };
-    const doc = await Embedding.findOneAndUpdate(
-      { sourceId, sourceType },
-      payload,
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    res.status(201).json({ success: true, data: { id: doc._id, dims: vector.length } });
-  } catch (error) {
-    next(error);
+// Euclidean distance with normalized vectors
+function euclideanDistanceNormalized(a, b) {
+  const normA = Math.sqrt(a.reduce((s, x) => s + x * x, 0));
+  const normB = Math.sqrt(b.reduce((s, x) => s + x * x, 0));
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    const diff = (a[i] / normA) - (b[i] / normB);
+    sum += diff * diff;
   }
-};
+  return Math.sqrt(sum);
+}
 
+// ---------- CONTROLLERS ----------
+
+// Insert/Update face embedding
 exports.upsertImageEmbedding = async (req, res, next) => {
   try {
-    const { sourceId, sourceType = 'image', metadata, filename, verbose } = req.body;
+    const { sourceId, sourceType = 'student-face', metadata, filename } = req.body;
     if (!sourceId) {
       return res.status(400).json({ success: false, message: 'sourceId is required' });
     }
@@ -81,201 +88,101 @@ exports.upsertImageEmbedding = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Provide image via multipart file, imageBase64, or imagePath' });
     }
 
-    let buffer;
-    if (req.file && req.file.buffer) {
-      buffer = req.file.buffer;
-    } else if (req.body.imageBase64) {
-      const base64 = req.body.imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
-      buffer = Buffer.from(base64, 'base64');
-    } else if (req.body.imagePath) {
-      const absolute = path.resolve(process.cwd(), req.body.imagePath);
-      buffer = fs.readFileSync(absolute);
-    }
+    console.log('[upsertImageEmbedding] Starting process for sourceId=', sourceId);
 
-    const input = await loadImageAsTensorFromBuffer(buffer);
-    const model = await mobilenet.load({ version: 2, alpha: 1.0 });
-    const features = model.infer(input, { embedding: true });
-    const vector = Array.from(await features.data());
-    input.dispose();
-    features.dispose();
+    const img = await loadImage(req.file?.buffer, req.body.imageBase64, req.body.imagePath);
+    console.log('[upsertImageEmbedding] Image loaded');
 
-    const text = filename || req.body.imagePath || 'uploaded-image';
+    let vector = await getFaceDescriptor(img);
+    vector = normalizeVector(vector); // ✅ normalize before saving
+
+    console.log('[upsertImageEmbedding] Normalized descriptor extracted. Length=', vector.length);
+    console.log('[upsertImageEmbedding] Descriptor sample (first 10 values):', vector.slice(0, 10));
+
+    const text = filename || req.body.imagePath || 'uploaded-face';
     const payload = { sourceId, sourceType, text, vector, metadata };
+
     const doc = await Embedding.findOneAndUpdate(
       { sourceId, sourceType },
       payload,
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+    console.log('[upsertImageEmbedding] Embedding saved in DB. _id=', doc._id);
 
-    // If this is a student face embedding, save the embedding ID to the student's faceEmbedding field
     if (sourceType === 'student-face' && sourceId) {
       try {
-        await Student.findByIdAndUpdate(sourceId, { 
-          faceEmbedding: doc._id.toString() 
-        });
-        console.log(`[embeddings.upsertImageEmbedding] Updated student ${sourceId} with face embedding ID: ${doc._id}`);
+        await Student.findByIdAndUpdate(sourceId, { faceEmbedding: doc._id.toString() });
+        console.log(`[upsertImageEmbedding] Updated student ${sourceId} with face embedding ID: ${doc._id}`);
       } catch (err) {
-        console.error(`[embeddings.upsertImageEmbedding] Failed to update student ${sourceId}:`, err.message);
-        // Don't fail the request if student update fails
+        console.error(`[upsertImageEmbedding] Failed to update student ${sourceId}:`, err.message);
       }
     }
 
-    const base = { id: doc._id, dims: vector.length };
-    if (String(verbose) === 'true') {
-      base.vector = vector;
-      base.metadata = metadata;
-      base.sourceId = sourceId;
-      base.sourceType = sourceType;
-    }
-    res.status(201).json({ success: true, data: base });
+    res.status(201).json({ success: true, data: { id: doc._id, dims: vector.length } });
   } catch (error) {
+    console.error('[upsertImageEmbedding] ERROR:', error.message);
     next(error);
   }
 };
 
-exports.getEmbeddingBySource = async (req, res, next) => {
-  try {
-    const { sourceType, sourceId } = req.params;
-    const doc = await Embedding.findOne({ sourceType, sourceId });
-    if (!doc) {
-      return res.status(404).json({ success: false, message: 'Embedding not found' });
-    }
-    res.json({ success: true, data: doc });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.searchByCosineSimilarity = async (req, res, next) => {
-  try {
-    const { vector, topK = 5, sourceType } = req.body;
-    if (!Array.isArray(vector) || vector.length === 0) {
-      return res.status(400).json({ success: false, message: 'vector array is required' });
-    }
-    const filter = sourceType ? { sourceType } : {};
-    const all = await Embedding.find(filter).lean();
-    function cosineSim(a, b) {
-      let dot = 0, na = 0, nb = 0;
-      const len = Math.min(a.length, b.length);
-      for (let i = 0; i < len; i++) {
-        dot += a[i] * b[i];
-        na += a[i] * a[i];
-        nb += b[i] * b[i];
-      }
-      const denom = Math.sqrt(na) * Math.sqrt(nb) || 1;
-      return dot / denom;
-    }
-    const scored = all.map(d => ({ doc: d, score: cosineSim(vector, d.vector) }));
-    scored.sort((a, b) => b.score - a.score);
-    res.json({ success: true, data: scored.slice(0, Number(topK)) });
-  } catch (error) {
-    next(error);
-  }
-};
-
-
-// Compare an input image against stored image embeddings and report best match
-// Accepts: multipart file field 'image' or JSON { imageBase64 | imagePath }
-// Optional: threshold (default 0.85) and sourceType filter
+// Compare input face with stored embeddings
 exports.compareImage = async (req, res, next) => {
   try {
-    const { threshold = 0.85, sourceType, sourceId, verbose, perDim } = req.body;
+    const { sourceType = 'student-face', sourceId, verbose } = req.body;
+    const threshold = 0.25; // ✅ tuned threshold from your observation
+
     if (!req.file && !req.body.imageBase64 && !req.body.imagePath) {
       return res.status(400).json({ success: false, message: 'Provide image via multipart file, imageBase64, or imagePath' });
     }
 
-    let buffer;
-    if (req.file && req.file.buffer) {
-      buffer = req.file.buffer;
-    } else if (req.body.imageBase64) {
-      const base64 = req.body.imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
-      buffer = Buffer.from(base64, 'base64');
-    } else if (req.body.imagePath) {
-      const absolute = path.resolve(process.cwd(), req.body.imagePath);
-      buffer = fs.readFileSync(absolute);
-    }
+    const img = await loadImage(req.file?.buffer, req.body.imageBase64, req.body.imagePath);
+    const queryVector = normalizeVector(await getFaceDescriptor(img));
 
-    const input = await loadImageAsTensorFromBuffer(buffer);
-    const model = await mobilenet.load({ version: 2, alpha: 1.0 });
-    const features = model.infer(input, { embedding: true });
-    const queryVector = Array.from(await features.data());
-    input.dispose();
-    features.dispose();
-
-    // Debug logging for vectors (trimmed for readability)
-    const logHead = (arr, n = 16) => Array.from(arr).slice(0, n);
-    console.log('[embeddings.compare] queryVector len=', queryVector.length, 'head=', logHead(queryVector));
-
-    // If a specific sourceId is provided, compare only against that document
-    const filter = sourceType ? { sourceType } : {};
-    if (sourceId) filter.sourceId = String(sourceId);
+    const filter = sourceId ? { sourceType, sourceId: String(sourceId) } : { sourceType };
     const all = await Embedding.find(filter).lean();
-    console.log('[embeddings.compare] loaded embeddings:', all.length);
 
-    function cosineSim(a, b) {
-      let dot = 0, na = 0, nb = 0;
-      const len = Math.min(a.length, b.length);
-      for (let i = 0; i < len; i++) {
-        dot += a[i] * b[i];
-        na += a[i] * a[i];
-        nb += b[i] * b[i];
-      }
-      const denom = Math.sqrt(na) * Math.sqrt(nb) || 1;
-      return dot / denom;
-    }
-
-    function cosineSimWithDetails(a, b, collectPerDim) {
-      let dot = 0, na = 0, nb = 0;
-      const len = Math.min(a.length, b.length);
-      const per = collectPerDim ? [] : null;
-      for (let i = 0; i < len; i++) {
-        const ai = a[i];
-        const bi = b[i];
-        const prod = ai * bi;
-        dot += prod;
-        na += ai * ai;
-        nb += bi * bi;
-        if (per) per.push({ i, a: ai, b: bi, prod });
-      }
-      const normA = Math.sqrt(na);
-      const normB = Math.sqrt(nb);
-      const denom = normA * normB || 1;
-      const score = dot / denom;
-      return { score, dot, normA, normB, denom, len, perDim: per };
-    }
+    console.log(`[compareImage] Comparing query vector against ${all.length} embeddings`);
 
     const scored = all.map(d => {
-      // Log each candidate vector head for diagnostics
-      try {
-        console.log('[embeddings.compare] candidate sourceId=', d.sourceId, 'len=', (d.vector || []).length, 'head=', logHead(d.vector || []));
-      } catch (e) {}
-      const details = cosineSimWithDetails(queryVector, d.vector, String(perDim) === 'true');
-      return { doc: d, score: details.score, details };
+      const dist = euclideanDistanceNormalized(queryVector, d.vector);
+      console.log(`[compareImage] Candidate sourceId=${d.sourceId}, distance=${dist.toFixed(4)}`);
+      return { doc: d, distance: dist };
     });
-    scored.sort((a, b) => b.score - a.score);
-    const best = scored[0] || null;
-    const matched = Boolean(best && best.score >= Number(threshold));
 
-    const response = { matched, threshold: Number(threshold) };
-    if (best) response.bestMatch = best;
+    scored.sort((a, b) => a.distance - b.distance);
+    const best = scored[0] || null;
+    const matched = Boolean(best && best.distance <= threshold);
+
+    console.log(`[compareImage] Best match sourceId=${best?.doc?.sourceId}, distance=${best?.distance?.toFixed(4)}, matched=${matched}`);
+
+    const response = {
+      matched,
+      threshold,
+      bestMatch: best ? { sourceId: best.doc.sourceId, distance: best.distance } : null
+    };
+
     if (String(verbose) === 'true') {
       response.queryVector = queryVector;
       response.candidates = scored;
     }
+
     return res.json({ success: true, data: response });
   } catch (error) {
+    console.error('[compareImage] ERROR:', error.message);
     next(error);
   }
 };
 
-// Compare two stored embeddings by sourceId values
-// Body: { sourceIdA: string, sourceIdB: string, threshold?: number, sourceType?: string }
+// Compare two stored face embeddings
 exports.compareStored = async (req, res, next) => {
   try {
-    const { sourceIdA, sourceIdB, threshold = 0.9, sourceType = 'image', verbose, perDim } = req.body;
+    const { sourceIdA, sourceIdB, sourceType = 'student-face', verbose } = req.body;
+    const threshold = 0.25; // ✅ tuned threshold from your observation
+
     if (!sourceIdA || !sourceIdB) {
       return res.status(400).json({ success: false, message: 'sourceIdA and sourceIdB are required' });
     }
+
     const [a, b] = await Promise.all([
       Embedding.findOne({ sourceId: sourceIdA, sourceType }),
       Embedding.findOne({ sourceId: sourceIdB, sourceType }),
@@ -283,41 +190,29 @@ exports.compareStored = async (req, res, next) => {
     if (!a || !b) {
       return res.status(404).json({ success: false, message: 'One or both embeddings not found' });
     }
-    function cosineSimilarityWithDetails(x, y, collectPerDim) {
-      let dot = 0, nx = 0, ny = 0;
-      const len = Math.min(x.length, y.length);
-      const per = collectPerDim ? [] : null;
-      for (let i = 0; i < len; i++) {
-        const xi = x[i];
-        const yi = y[i];
-        const prod = xi * yi;
-        dot += prod;
-        nx += xi * xi;
-        ny += yi * yi;
-        if (per) per.push({ i, a: xi, b: yi, prod });
-      }
-      const normA = Math.sqrt(nx);
-      const normB = Math.sqrt(ny);
-      const denom = normA * normB || 1;
-      const score = dot / denom;
-      return { score, dot, normA, normB, denom, len, perDim: per };
-    }
-    const details = cosineSimilarityWithDetails(a.vector, b.vector, String(perDim) === 'true');
-    const score = details.score;
-    // Also report normalized L2 distance derived from cosine for transparency
-    const normDistance = Math.sqrt(Math.max(0, 2 * (1 - score)));
-    const t = Number(threshold);
-    const matched = score >= t;
-    const payload = { matched, cosine: score, normDistance, threshold: t, a: { id: a._id, sourceId: a.sourceId }, b: { id: b._id, sourceId: b.sourceId } };
+
+    const distance = euclideanDistanceNormalized(a.vector, b.vector);
+    const matched = distance <= threshold;
+
+    console.log(`[compareStored] A=${a.sourceId}, B=${b.sourceId}, distance=${distance.toFixed(4)}, matched=${matched}`);
+
+    const payload = {
+      matched,
+      threshold,
+      distance,
+      a: { id: a._id, sourceId: a.sourceId },
+      b: { id: b._id, sourceId: b.sourceId }
+    };
+
     if (String(verbose) === 'true') {
-      payload.details = details;
       payload.a.vector = a.vector;
       payload.b.vector = b.vector;
     }
+
     return res.json({ success: true, data: payload });
   } catch (error) {
+    console.error('[compareStored] ERROR:', error.message);
     next(error);
   }
 };
-
 
