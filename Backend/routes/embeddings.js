@@ -38,6 +38,7 @@ router.post('/search', [
 // Compare an input image to stored embeddings
 router.post('/compare', upload.single('image'), [
   body('threshold').optional().isFloat({ min: 0, max: 1 }),
+  body('sourceId').optional().isString(),
   handleValidationErrors
 ], auth, controller.compareImage);
 

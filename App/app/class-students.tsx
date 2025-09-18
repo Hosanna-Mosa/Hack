@@ -46,6 +46,9 @@ export default function ClassStudentsScreen() {
   const [idDialogVisible, setIdDialogVisible] = useState(false);
   const [enteredStudentId, setEnteredStudentId] = useState("");
 
+  // Face recognition loading state
+  const [faceRecognitionLoading, setFaceRecognitionLoading] = useState(false);
+
   const openActions = (student: Student) => {
     setSelectedStudent(student);
     setActionVisible(true);
@@ -102,9 +105,12 @@ export default function ClassStudentsScreen() {
 
   const launchCameraForFace = async () => {
     try {
+      setFaceRecognitionLoading(true);
+      
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
         Alert.alert("Permission required", "Please allow camera access to continue.");
+        setFaceRecognitionLoading(false);
         return false;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -113,11 +119,17 @@ export default function ClassStudentsScreen() {
         quality: 0.6,
         cameraType: ImagePicker.CameraType.front,
       });
-      if (result.canceled) return false;
+      if (result.canceled) {
+        setFaceRecognitionLoading(false);
+        return false;
+      }
 
       // Convert to base64 for backend comparison
       const asset = result.assets?.[0];
-      if (!asset) return false;
+      if (!asset) {
+        setFaceRecognitionLoading(false);
+        return false;
+      }
 
       // On Expo, we need to re-fetch the file as base64
       const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
@@ -125,22 +137,79 @@ export default function ClassStudentsScreen() {
       const compare = await API.embeddings.compareFace({
         imageBase64: base64,
         sourceType: "student-face",
+        sourceId: selectedStudent?.id,
         threshold: 0.85,
       });
 
-      if (compare.success && compare.data?.matched && compare.data.bestMatch?.doc?.sourceId) {
-        const matchedSourceId = compare.data.bestMatch.doc.sourceId as string;
-        const matched = students.find((s) => s.id === matchedSourceId || s.admissionNumber === matchedSourceId);
-        if (matched) {
-          markStudent(matched.id, "present");
+      if (compare.success && compare.data?.matched) {
+        // Since we restricted to sourceId, a match means the selected student is verified
+        if (selectedStudent) {
+          markStudent(selectedStudent.id, "present");
+          setFaceRecognitionLoading(false);
           return true;
         }
       }
 
       Alert.alert("Face not recognized", "Could not match the face to any student.");
+      setFaceRecognitionLoading(false);
       return false;
     } catch (e) {
       Alert.alert("Camera Error", "Unable to open camera. Try again on a real device.");
+      setFaceRecognitionLoading(false);
+      return false;
+    }
+  };
+
+  const enrollFaceForStudent = async () => {
+    try {
+      setFaceRecognitionLoading(true);
+      
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission required", "Please allow camera access to continue.");
+        setFaceRecognitionLoading(false);
+        return false;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.6,
+        cameraType: ImagePicker.CameraType.front,
+      });
+      if (result.canceled) {
+        setFaceRecognitionLoading(false);
+        return false;
+      }
+
+      const asset = result.assets?.[0];
+      if (!asset) {
+        setFaceRecognitionLoading(false);
+        return false;
+      }
+
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+
+      const enroll = await API.embeddings.enrollFace({
+        imageBase64: base64,
+        sourceId: selectedStudent?.id || "",
+        sourceType: "student-face",
+        metadata: {
+          studentName: selectedStudent?.name,
+          admissionNumber: selectedStudent?.admissionNumber,
+        }
+      });
+
+      if (enroll.success) {
+        setFaceRecognitionLoading(false);
+        return true;
+      } else {
+        Alert.alert("Enrollment failed", enroll.message || "Could not enroll face.");
+        setFaceRecognitionLoading(false);
+        return false;
+      }
+    } catch (e) {
+      Alert.alert("Camera Error", "Unable to open camera. Try again on a real device.");
+      setFaceRecognitionLoading(false);
       return false;
     }
   };
@@ -175,7 +244,7 @@ export default function ClassStudentsScreen() {
     setEnteredStudentId("");
   };
 
-  const handleChoose = async (type: "face" | "id" | "absent") => {
+  const handleChoose = async (type: "face" | "enroll" | "id" | "absent") => {
     if (!selectedStudent) return;
     try {
       if (type === "absent") {
@@ -188,6 +257,15 @@ export default function ClassStudentsScreen() {
         const ok = await launchCameraForFace();
         if (ok && selectedStudent) {
           markStudent(selectedStudent.id, "present");
+        }
+        setSelectedStudent(null);
+        return;
+      }
+      if (type === "enroll") {
+        hideActionSheetOnly();
+        const ok = await enrollFaceForStudent();
+        if (ok) {
+          Alert.alert("Success", "Face enrolled successfully!");
         }
         setSelectedStudent(null);
         return;
@@ -407,6 +485,9 @@ export default function ClassStudentsScreen() {
             <TouchableOpacity style={[styles.sheetBtn, styles.faceBtn]} onPress={() => handleChoose("face")}>
               <Text style={styles.sheetBtnText}>Face Recognition</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={[styles.sheetBtn, styles.enrollBtn]} onPress={() => handleChoose("enroll")}>
+              <Text style={styles.sheetBtnText}>Enroll Face</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={[styles.sheetBtn, styles.idBtn]} onPress={() => handleChoose("id")}>
               <Text style={styles.sheetBtnText}>Mark Present (Manual)</Text>
             </TouchableOpacity>
@@ -448,6 +529,22 @@ export default function ClassStudentsScreen() {
                 <Text style={styles.idBtnConfirmText}>Confirm</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Face Recognition Loading Modal */}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={faceRecognitionLoading}
+        onRequestClose={() => {}} // Prevent closing during processing
+      >
+        <View style={styles.loadingBackdrop}>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color="#1D4ED8" />
+            <Text style={styles.loadingTitle}>Processing Face Recognition</Text>
+            <Text style={styles.loadingSubtext}>Please wait while we match your face...</Text>
           </View>
         </View>
       </Modal>
@@ -639,6 +736,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   faceBtn: { backgroundColor: "#1D4ED8" },
+  enrollBtn: { backgroundColor: "#059669" },
   idBtn: { backgroundColor: "#2563EB" },
   absentBtn: { backgroundColor: "#EF4444" },
   sheetBtnText: {
@@ -715,5 +813,35 @@ const styles = StyleSheet.create({
   idBtnConfirmText: {
     color: "white",
     fontWeight: "700",
+  },
+  // Face recognition loading modal styles
+  loadingBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 22,
+  },
+  loadingCard: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    alignItems: "center",
+    minWidth: 280,
+  },
+  loadingTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 8,
+    textAlign: "center",
+    lineHeight: 20,
   },
 });
