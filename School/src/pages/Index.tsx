@@ -49,7 +49,7 @@ const Index = () => {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/communication" element={<div className="p-8 text-center text-muted-foreground">Communication hub coming soon...</div>} />
         <Route path="/notifications" element={<div className="p-8 text-center text-muted-foreground">Notifications management coming soon...</div>} />
-        <Route path="/settings" element={<div className="p-8 text-center text-muted-foreground">System settings coming soon...</div>} />
+        {/** settings route removed */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </MainLayout>

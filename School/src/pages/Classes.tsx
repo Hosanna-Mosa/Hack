@@ -238,8 +238,8 @@ const [viewOpen, setViewOpen] = useState(false);
 							<Button variant="secondary" onClick={async () => {
 								if (!moreClassId) return;
 								try {
-									const res = await apiRequest<{ success: boolean; data: any[] }>(`/classes/${moreClassId}/students`);
-									setClassStudents((res.data || []).map((s: any) => ({ _id: s._id, name: s.name, admissionNumber: s.academicInfo?.admissionNumber })));
+                                const res = await apiRequest<{ success: boolean; data: any[] }>(`/classes/${moreClassId}/students`);
+                                    setClassStudents((res.data || []).map((s: any) => ({ _id: s.id, name: s.name, admissionNumber: s.admissionNumber })));
 									setViewOpen(true);
 									setMoreOpen(false);
 								} catch (e: any) {
@@ -249,8 +249,8 @@ const [viewOpen, setViewOpen] = useState(false);
 							<Button variant="outline" onClick={async () => {
 								if (!moreClassId) return;
 								try {
-									const res = await apiRequest<{ success: boolean; data: any[] }>(`/classes/${moreClassId}/students`);
-									setClassStudents((res.data || []).map((s: any) => ({ _id: s._id, name: s.name, admissionNumber: s.academicInfo?.admissionNumber })));
+                                const res = await apiRequest<{ success: boolean; data: any[] }>(`/classes/${moreClassId}/students`);
+                                    setClassStudents((res.data || []).map((s: any) => ({ _id: s.id, name: s.name, admissionNumber: s.admissionNumber })));
 									setStudentsToRemove([]);
 									setRemoveOpen(true);
 									setMoreOpen(false);

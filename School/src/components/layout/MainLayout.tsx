@@ -82,11 +82,6 @@ export function MainLayout({ children, user, onLogout }: MainLayoutProps) {
                       <p className="text-xs text-muted-foreground">{user?.email || ""}</p>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="gap-2">
-                      <User className="w-4 h-4" />
-                      Profile Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onLogout} className="gap-2 text-destructive">
                       <LogOut className="w-4 h-4" />
                       Sign Out
