@@ -31,6 +31,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
   const { state, loginWithTeacher, clearError } = useAuth();
   const { isLoading, error: authError } = state;
@@ -133,13 +134,13 @@ export default function LoginScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={["#3b82f6", "#1d4ed8"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
-    >
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={["#3b82f6", "#1d4ed8"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardView}
@@ -190,48 +191,74 @@ export default function LoginScreen() {
 
                 {/* Phone Number Input */}
                 <View style={styles.inputContainer}>
-                  <View style={styles.inputRow}>
-                    <Phone size={20} color="#6b7280" strokeWidth={1.5} />
+                  <Text style={styles.inputLabel}>Phone Number</Text>
+                  <View style={[
+                    styles.inputRow,
+                    focusedInput === 'phone' && styles.inputRowFocused,
+                    error && styles.inputRowError
+                  ]}>
+                    <Phone 
+                      size={22} 
+                      color={focusedInput === 'phone' ? "#3b82f6" : "#6b7280"} 
+                      strokeWidth={1.5} 
+                    />
                     <TextInput
                       style={styles.textInput}
-                      placeholder="Phone Number"
+                      placeholder="Enter 10-digit phone number"
                       placeholderTextColor="#9ca3af"
                       value={phoneNumber}
                       onChangeText={setPhoneNumber}
+                      onFocus={() => setFocusedInput('phone')}
+                      onBlur={() => setFocusedInput(null)}
                       keyboardType="phone-pad"
                       maxLength={14}
                       autoCapitalize="none"
                       autoCorrect={false}
+                      returnKeyType="next"
+                      blurOnSubmit={false}
                     />
-                    <Text style={styles.helperText}>10-digit Number</Text>
+                    <Text style={styles.helperText}>10-digit</Text>
                   </View>
                 </View>
 
                 {/* Password Input */}
                 <View style={styles.inputContainer}>
-                  <View style={styles.inputRow}>
-                    <Lock size={20} color="#6b7280" strokeWidth={1.5} />
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <View style={[
+                    styles.inputRow,
+                    focusedInput === 'password' && styles.inputRowFocused,
+                    error && styles.inputRowError
+                  ]}>
+                    <Lock 
+                      size={22} 
+                      color={focusedInput === 'password' ? "#3b82f6" : "#6b7280"} 
+                      strokeWidth={1.5} 
+                    />
                     <TextInput
                       style={styles.textInput}
                       placeholder="Enter your password"
                       placeholderTextColor="#9ca3af"
                       value={password}
                       onChangeText={setPassword}
+                      onFocus={() => setFocusedInput('password')}
+                      onBlur={() => setFocusedInput(null)}
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
                       autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSignIn}
                     />
-                    <View style={styles.switchRow}>
-                      <Text style={styles.switchLabel}>
-                        Show/Hide{"\n"}Password
-                      </Text>
-                      <Switch
-                        value={showPassword}
-                        onValueChange={setShowPassword}
-                        thumbColor={showPassword ? "#1d4ed8" : "#e5e7eb"}
-                        trackColor={{ false: "#d1d5db", true: "#93c5fd" }}
-                      />
-                    </View>
+                    <TouchableOpacity
+                      style={styles.passwordToggle}
+                      onPress={() => setShowPassword(!showPassword)}
+                      activeOpacity={0.7}
+                    >
+                      {showPassword ? (
+                        <EyeOff size={20} color="#6b7280" strokeWidth={1.5} />
+                      ) : (
+                        <Eye size={20} color="#6b7280" strokeWidth={1.5} />
+                      )}
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -293,8 +320,8 @@ export default function LoginScreen() {
             </Animated.View>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
@@ -304,6 +331,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    backgroundColor: "#1d4ed8",
   },
   keyboardView: {
     flex: 1,
@@ -313,8 +341,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 32,
+    paddingTop: 40,
+    paddingBottom: 24,
   },
   backButton: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
@@ -337,20 +365,22 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   card: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: 24,
-    padding: 32,
+    backgroundColor: "rgba(255, 255, 255, 0.98)",
+    borderRadius: 20,
+    padding: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 20,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
+    marginHorizontal: 4,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "900",
     color: "#1f2937",
     textAlign: "center",
@@ -359,31 +389,68 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#6b7280",
     textAlign: "center",
-    marginBottom: 32,
-    fontSize: 16,
+    marginBottom: 28,
+    fontSize: 15,
+    lineHeight: 22,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+    marginBottom: 6,
+    marginLeft: 4,
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
-    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderWidth: 1,
+    paddingVertical: 12,
+    borderWidth: 2,
     borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    minHeight: 48,
+  },
+  inputRowFocused: {
+    borderColor: "#3b82f6",
+    backgroundColor: "#f8faff",
+    shadowColor: "#3b82f6",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  inputRowError: {
+    borderColor: "#ef4444",
+    backgroundColor: "#fef2f2",
   },
   textInput: {
     flex: 1,
     marginLeft: 12,
+    marginRight: 8,
     fontSize: 16,
     color: "#1f2937",
+    fontWeight: "500",
+    minHeight: 20,
+    paddingVertical: 0,
   },
   helperText: {
     color: "#9ca3af",
     fontSize: 12,
+    fontWeight: "500",
+  },
+  passwordToggle: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "transparent",
   },
   eyeButton: {
     marginLeft: 8,
@@ -410,23 +477,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   signInButton: {
-    borderRadius: 16,
-    marginTop: 16,
+    borderRadius: 14,
+    marginTop: 20,
     shadowColor: "#3b82f6",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
   },
   gradientButton: {
-    paddingVertical: 20,
-    borderRadius: 16,
+    paddingVertical: 18,
+    borderRadius: 14,
   },
   signInButtonText: {
     color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontWeight: "700",
     textAlign: "center",
+    letterSpacing: 0.5,
   },
   forgotButton: {
     marginTop: 24,
@@ -454,6 +522,7 @@ const styles = StyleSheet.create({
   brandContainer: {
     flexDirection: "column",
     alignItems: "center",
+    marginTop: 16,
   },
   brandIconCircle: {
     backgroundColor: "white",
@@ -471,7 +540,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "800",
-    marginTop: 8,
+    marginTop: 6,
     letterSpacing: 1,
   },
   animatedContainer: {

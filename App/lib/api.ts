@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Base API configuration
 const API_BASE_URL = __DEV__
-  ? "http://10.236.197.143:8000/api"
+  ? "http://192.168.34.42:8000/api"
   : "https://your-production-api.com/api";
 
 // API Response types
