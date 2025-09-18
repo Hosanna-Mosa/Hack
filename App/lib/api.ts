@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Base API configuration
 const API_BASE_URL = __DEV__
-  ? "http://192.168.34.42:8000/api"
+  ? "http://10.127.168.42:8000/api"
   : "https://your-production-api.com/api";
 
 // API Response types
@@ -222,6 +222,26 @@ export const AttendanceAPI = {
     }
 
     const endpoint = `/attendance${
+      queryParams.toString() ? `?${queryParams.toString()}` : ""
+    }`;
+    return apiRequest(endpoint);
+  },
+
+  // Get attendance statistics (reports)
+  async getStats(params?: {
+    classId?: string;
+    startDate?: string;
+    endDate?: string;
+    period?: "daily" | "weekly" | "monthly";
+  }): Promise<ApiResponse> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) queryParams.append(key, String(value));
+      });
+    }
+
+    const endpoint = `/attendance/stats${
       queryParams.toString() ? `?${queryParams.toString()}` : ""
     }`;
     return apiRequest(endpoint);

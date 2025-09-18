@@ -21,6 +21,13 @@ function RootLayoutNav() {
       <Stack.Screen name="dashboard" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen 
+        name="reports" 
+        options={{ 
+          headerShown: false,
+          presentation: "card"
+        }} 
+      />
+      <Stack.Screen 
         name="class-students" 
         options={{ 
           headerShown: false,

@@ -1,6 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
-import { ClipboardList, LayoutGrid } from "lucide-react-native";
+import { ClipboardList, LayoutGrid, Users, BookOpen } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
@@ -15,6 +15,34 @@ export default function TabsLayout() {
         name="attendance"
         options={{
           title: "Attendance",
+          tabBarIcon: ({ color, size }) => (
+            <ClipboardList color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="students"
+        options={{
+          title: "Students",
+          tabBarIcon: ({ color, size }) => (
+            <Users color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="classes"
+        options={{
+          title: "Classes",
+          tabBarIcon: ({ color, size }) => (
+            <BookOpen color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          title: "Reports",
+          // reuse same icon for now
           tabBarIcon: ({ color, size }) => (
             <ClipboardList color={color} size={size} />
           ),

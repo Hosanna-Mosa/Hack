@@ -132,36 +132,7 @@ export default function DashboardScreen() {
     router.replace("/login");
   };
 
-  const quickActions = [
-    {
-      icon: Calendar,
-      label: "Mark Attendance",
-      color: "#667eea",
-      bgColor: "#e0e7ff",
-      onPress: () => router.push("/(tabs)/attendance" as any),
-    },
-    {
-      icon: Users,
-      label: "Students",
-      color: "#ef4444",
-      bgColor: "#fef2f2",
-      onPress: navigateToStudents,
-    },
-    {
-      icon: BookOpen,
-      label: "Classes",
-      color: "#f59e0b",
-      bgColor: "#fef3c7",
-      onPress: () => router.push("/dashboard" as any),
-    },
-    {
-      icon: CheckCircle,
-      label: "Reports",
-      color: "#10b981",
-      bgColor: "#d1fae5",
-      onPress: () => {},
-    },
-  ];
+  // Quick actions moved to bottom tab bar per user request
 
   const stats = [
     { label: "Total Students", value: String(metrics.totalStudents), icon: Users, color: "#667eea" },
@@ -169,7 +140,7 @@ export default function DashboardScreen() {
     { label: "Classes", value: String(metrics.classesCount), icon: BookOpen, color: "#f59e0b" },
   ];
 
-  const navigateToStudents = async () => {
+  async function navigateToStudents() {
     try {
       // Try assigned classes first
       const assigned = await TeacherAPI.getAssignedClasses();
@@ -194,7 +165,7 @@ export default function DashboardScreen() {
     } catch {
       router.push("/class-students" as any);
     }
-  };
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -291,47 +262,7 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* Quick Actions */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Quick Actions</Text>
-              <View style={styles.quickActionsGrid}>
-                {quickActions.map((action, index) => {
-                  const IconComponent = action.icon;
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      style={[
-                        styles.quickActionCard,
-                        { backgroundColor: action.bgColor },
-                      ]}
-                      activeOpacity={0.8}
-                      onPress={action.onPress}
-                    >
-                      <View
-                        style={[
-                          styles.quickActionIcon,
-                          { backgroundColor: action.color },
-                        ]}
-                      >
-                        <IconComponent
-                          size={24}
-                          color="white"
-                          strokeWidth={2}
-                        />
-                      </View>
-                      <Text
-                        style={[
-                          styles.quickActionLabel,
-                          { color: action.color },
-                        ]}
-                      >
-                        {action.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+            {/* Quick Actions removed; actions available in bottom tab bar */}
 
             {/* Stats */}
             <View style={styles.sectionContainer}>
@@ -416,7 +347,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    paddingTop: 28,
+    paddingTop: 20,
     paddingBottom: 24,
   },
   headerLeft: {
