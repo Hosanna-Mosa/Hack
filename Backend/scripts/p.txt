@@ -1,0 +1,1 @@
+once check the compare approch it is checking all users face embedding i want from frontend send studentid which are taking photo only comapre with that student id only instead of all users
