@@ -10,9 +10,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  BookOpen,
-  GraduationCap
+  BookOpen
 } from "lucide-react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from 'recharts';
 import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "@/lib/api";
@@ -49,7 +49,9 @@ export function Dashboard() {
   const [classesActive, setClassesActive] = useState(0);
   const [teachersPresent, setTeachersPresent] = useState(0);
   const [alerts, setAlerts] = useState(dashboardData.alerts);
-  const [recentActivity, setRecentActivity] = useState(dashboardData.recentActivity);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [weeklySeries, setWeeklySeries] = useState<any[]>([]);
+  const [classFillSeries, setClassFillSeries] = useState<any[]>([]);
   const attendanceRate = useMemo(() => (today.total ? ((today.present / today.total) * 100).toFixed(1) : '0.0'), [today]);
   const navigate = useNavigate();
 
@@ -64,15 +66,47 @@ export function Dashboard() {
         const late = list.filter(r => r.status === 'late').length;
         const absent = list.filter(r => r.status === 'absent' || r.status === 'excused').length;
         setToday({ present, late, absent, total });
+
+        // Build per-class present/total for the bar chart using REAL attendance for today
+        const byClass: Record<string, { name: string; present: number; total: number }> = {};
+        for (const rec of list) {
+          const cls = rec.classId || {};
+          const name = `${cls.name || ''} ${cls.grade || ''}${cls.section ? '-' + cls.section : ''}`.trim() || 'Class';
+          const key = cls._id || name;
+          if (!byClass[key]) byClass[key] = { name, present: 0, total: 0 };
+          byClass[key].total += 1;
+          if (rec.status === 'present') byClass[key].present += 1;
+        }
+        const classSeries = Object.values(byClass)
+          .sort((a,b) => b.total - a.total)
+          .slice(0, 8)
+          .map(c => ({ name: c.name, students: c.present }));
+        setClassFillSeries(classSeries);
       } catch {}
       try {
+        // Still show count of classes for header metrics alignment
         const res = await apiRequest<any>(`/classes`);
-        setClassesActive(Array.isArray(res.data) ? res.data.length : 0);
+        const list = Array.isArray(res.data) ? res.data : [];
+        setClassesActive(list.length);
       } catch {}
       try {
-        const res = await apiRequest<any>(`/teachers/classes/attendance-status`);
-        const count = (res.data?.teachersPresent as number) || 0;
-        setTeachersPresent(count);
+        // Derive a simple 7-day attendance trend (present counts)
+        const days: any[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          const dayStr = d.toISOString().slice(0,10);
+          try {
+            const r = await apiRequest<any>(`/attendance?date=${dayStr}`);
+            const list = (r.data as any[]) || [];
+            const present = list.filter(x => x.status === 'present').length;
+            days.push({ day: dayStr.slice(5), present });
+          } catch { days.push({ day: dayStr.slice(5), present: 0 }); }
+        }
+        setWeeklySeries(days);
+      } catch {}
+      try {
+        const res = await apiRequest<any>(`/activity/recent`);
+        setRecentActivity(Array.isArray(res.data) ? res.data : []);
       } catch {}
     };
     load();
@@ -98,7 +132,7 @@ export function Dashboard() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="metric-card gradient-primary text-white">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -127,31 +161,7 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="metric-card">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-medium">Active Classes</CardTitle>
-              <BookOpen className="w-6 h-6 text-secondary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{classesActive}</div>
-            <p className="text-muted-foreground text-sm">Currently in session</p>
-          </CardContent>
-        </Card>
-
-        <Card className="metric-card">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-medium">Teachers Present</CardTitle>
-              <GraduationCap className="w-6 h-6 text-accent" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{teachersPresent}</div>
-            <p className="text-muted-foreground text-sm">On campus today</p>
-          </CardContent>
-        </Card>
+        {/* Charts moved to Reports page */}
       </div>
 
       {/* Detailed Stats and Alerts */}
@@ -260,13 +270,9 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button className="h-20 flex-col gap-2" variant="outline">
+            <Button className="h-20 flex-col gap-2" variant="outline" onClick={() => navigate('/students') }>
               <Users className="w-6 h-6" />
               <span className="text-sm">Add Student</span>
-            </Button>
-            <Button className="h-20 flex-col gap-2" variant="outline">
-              <UserCheck className="w-6 h-6" />
-              <span className="text-sm">Mark Attendance</span>
             </Button>
             <Button className="h-20 flex-col gap-2" variant="outline" onClick={() => navigate('/classes')}>
               <BookOpen className="w-6 h-6" />

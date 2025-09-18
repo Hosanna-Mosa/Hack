@@ -17,7 +17,7 @@ router.get('/', [
 	try {
 		const { schoolId } = req.query;
 		const classes = await ClassModel.find({ schoolId })
-			.populate({ path: 'teachers', populate: { path: 'user', select: 'profile.name profile.contact.email' } })
+			.populate({ path: 'teacherIds', populate: { path: 'user', select: 'profile.name profile.contact.email' } })
 			.sort({ createdAt: -1 });
 		res.json({ success: true, data: classes });
 	} catch (err) {
@@ -152,6 +152,85 @@ router.post('/:id/assign-students', [
 			next(err);
 		}
 	});
+
+// PUT /api/classes/:id/teachers - Update teacher assignments for a class
+router.put('/:id/teachers', [
+	auth,
+	param('id').custom((v) => mongoose.Types.ObjectId.isValid(v)).withMessage('Valid class id required'),
+	body('teacherIds').isArray().withMessage('teacherIds array required'),
+	validate
+], async (req, res, next) => {
+	try {
+		const classId = req.params.id;
+		const { teacherIds } = req.body;
+
+		console.log('Updating teacher assignments for class:', classId);
+		console.log('Teacher IDs to assign:', teacherIds);
+
+		// Verify the class exists
+		const classData = await ClassModel.findById(classId);
+		if (!classData) {
+			return res.status(404).json({ success: false, message: 'Class not found' });
+		}
+
+		console.log('Class found:', classData.name, 'Current teacherIds:', classData.teacherIds);
+
+		// Verify all teacher IDs are valid
+		if (teacherIds.length > 0) {
+			const validTeachers = await Teacher.find({ 
+				_id: { $in: teacherIds }, 
+				schoolId: classData.schoolId,
+				isActive: true 
+			});
+			
+			if (validTeachers.length !== teacherIds.length) {
+				return res.status(400).json({ 
+					success: false, 
+					message: 'One or more teacher IDs are invalid or inactive' 
+				});
+			}
+		}
+
+        // Determine changes vs previous state
+        const previousTeacherIds = (classData.teacherIds || []).map((id) => String(id));
+        const nextTeacherIds = (teacherIds || []).map((id) => String(id));
+
+        const toAdd = nextTeacherIds.filter((id) => !previousTeacherIds.includes(id));
+        const toRemove = previousTeacherIds.filter((id) => !nextTeacherIds.includes(id));
+
+        // Update the class with new teacher assignments
+        const updateResult = await ClassModel.updateOne({ _id: classId }, { $set: { teacherIds: nextTeacherIds } });
+        console.log('Update result (class teacherIds):', updateResult, { toAdd, toRemove });
+
+        // Sync Teacher.assignedClassIds for adds
+        if (toAdd.length > 0) {
+            const addRes = await Teacher.updateMany(
+                { _id: { $in: toAdd } },
+                { $addToSet: { assignedClassIds: classId } }
+            );
+            console.log('Updated Teacher.assignedClassIds (add):', addRes.modifiedCount);
+        }
+
+        // Sync Teacher.assignedClassIds for removals
+        if (toRemove.length > 0) {
+            const removeRes = await Teacher.updateMany(
+                { _id: { $in: toRemove } },
+                { $pull: { assignedClassIds: classId } }
+            );
+            console.log('Updated Teacher.assignedClassIds (remove):', removeRes.modifiedCount);
+        }
+
+		// Get the updated class with populated teacher data
+        const updatedClass = await ClassModel.findById(classId)
+            .populate('teacherIds', 'name email');
+		
+		console.log('Updated class:', updatedClass.name, 'New teacherIds:', updatedClass.teacherIds);
+
+		res.json({ success: true, data: updatedClass });
+	} catch (err) {
+		next(err);
+	}
+});
 
 // GET /api/classes/unassigned-students?schoolId=...
 router.get('/unassigned', [
