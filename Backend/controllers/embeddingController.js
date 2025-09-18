@@ -11,6 +11,7 @@ const mobilenet = require('@tensorflow-models/mobilenet');
 const jpeg = require('jpeg-js');
 const { PNG } = require('pngjs');
 const Embedding = require('../models/Embedding');
+const Student = require('../models/Student');
 
 async function loadImageAsTensorFromBuffer(buffer) {
   const sig = buffer.slice(0, 8).toString('hex');
@@ -106,6 +107,19 @@ exports.upsertImageEmbedding = async (req, res, next) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
+    // If this is a student face embedding, save the embedding ID to the student's faceEmbedding field
+    if (sourceType === 'student-face' && sourceId) {
+      try {
+        await Student.findByIdAndUpdate(sourceId, { 
+          faceEmbedding: doc._id.toString() 
+        });
+        console.log(`[embeddings.upsertImageEmbedding] Updated student ${sourceId} with face embedding ID: ${doc._id}`);
+      } catch (err) {
+        console.error(`[embeddings.upsertImageEmbedding] Failed to update student ${sourceId}:`, err.message);
+        // Don't fail the request if student update fails
+      }
+    }
+
     const base = { id: doc._id, dims: vector.length };
     if (String(verbose) === 'true') {
       base.vector = vector;
@@ -165,7 +179,7 @@ exports.searchByCosineSimilarity = async (req, res, next) => {
 // Optional: threshold (default 0.85) and sourceType filter
 exports.compareImage = async (req, res, next) => {
   try {
-    const { threshold = 0.85, sourceType, verbose, perDim } = req.body;
+    const { threshold = 0.85, sourceType, sourceId, verbose, perDim } = req.body;
     if (!req.file && !req.body.imageBase64 && !req.body.imagePath) {
       return res.status(400).json({ success: false, message: 'Provide image via multipart file, imageBase64, or imagePath' });
     }
@@ -188,8 +202,27 @@ exports.compareImage = async (req, res, next) => {
     input.dispose();
     features.dispose();
 
+    // Debug logging for vectors (trimmed for readability)
+    const logHead = (arr, n = 16) => Array.from(arr).slice(0, n);
+    console.log('[embeddings.compare] queryVector len=', queryVector.length, 'head=', logHead(queryVector));
+
+    // If a specific sourceId is provided, compare only against that document
     const filter = sourceType ? { sourceType } : {};
+    if (sourceId) filter.sourceId = String(sourceId);
     const all = await Embedding.find(filter).lean();
+    console.log('[embeddings.compare] loaded embeddings:', all.length);
+
+    function cosineSim(a, b) {
+      let dot = 0, na = 0, nb = 0;
+      const len = Math.min(a.length, b.length);
+      for (let i = 0; i < len; i++) {
+        dot += a[i] * b[i];
+        na += a[i] * a[i];
+        nb += b[i] * b[i];
+      }
+      const denom = Math.sqrt(na) * Math.sqrt(nb) || 1;
+      return dot / denom;
+    }
 
     function cosineSimWithDetails(a, b, collectPerDim) {
       let dot = 0, na = 0, nb = 0;
@@ -212,6 +245,10 @@ exports.compareImage = async (req, res, next) => {
     }
 
     const scored = all.map(d => {
+      // Log each candidate vector head for diagnostics
+      try {
+        console.log('[embeddings.compare] candidate sourceId=', d.sourceId, 'len=', (d.vector || []).length, 'head=', logHead(d.vector || []));
+      } catch (e) {}
       const details = cosineSimWithDetails(queryVector, d.vector, String(perDim) === 'true');
       return { doc: d, score: details.score, details };
     });

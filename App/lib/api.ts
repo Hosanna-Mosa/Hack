@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Base API configuration
 const API_BASE_URL = __DEV__
-  ? "http://:8000/api"
+  ? "http://10.236.197.143:8000/api"
   : "https://your-production-api.com/api";
 
 // API Response types
@@ -386,8 +386,22 @@ export const EmbeddingsAPI = {
     imageBase64: string; // data URL or raw base64
     threshold?: number;
     sourceType?: string; // e.g., 'student-face'
+    sourceId?: string; // restrict comparison to this id
   }): Promise<ApiResponse<{ matched: boolean; bestMatch?: any; threshold: number }>> {
     return apiRequest("/embeddings/compare", {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
+  },
+
+  // Enroll a face image and create embedding
+  async enrollFace(options: {
+    imageBase64: string;
+    sourceId: string;
+    sourceType?: string;
+    metadata?: any;
+  }): Promise<ApiResponse<{ id: string; dims: number }>> {
+    return apiRequest("/embeddings/image", {
       method: "POST",
       body: JSON.stringify(options),
     });
