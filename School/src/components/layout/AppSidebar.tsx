@@ -100,10 +100,10 @@ export function AppSidebar() {
       </div>
 
       <SidebarContent className="p-4 space-y-2">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-            Main Menu
-          </SidebarGroupLabel>
+			<SidebarGroup>
+				<SidebarGroupLabel className="text-xs uppercase tracking-wider mb-2">
+					<span className="text-black font-bold">Main Menu</span>
+				</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
               {menuItems.map((item) => (
