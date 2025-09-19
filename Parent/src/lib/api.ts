@@ -10,7 +10,7 @@ export interface ApiResponse<T = any> {
 
 const DEFAULT_BASE_URL = (typeof window !== 'undefined' && window.location?.origin?.includes('localhost:8081'))
   ? "http://localhost:8000/api"
-  : "https://hack-i6v3.onrender.com/api";
+  : "http://localhost:8000/api";
 export const API_BASE_URL: string = (import.meta as any).env?.VITE_API_URL || DEFAULT_BASE_URL;
 
 function getParentToken(): string | null {
