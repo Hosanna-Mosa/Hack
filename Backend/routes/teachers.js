@@ -75,4 +75,10 @@ router.post('/change-password', [
   validate
 ], teacherController.changePassword);
 
+router.post('/change-password-from-default', [
+  auth,
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+  validate
+], teacherController.changePasswordFromDefault);
+
 module.exports = router;
