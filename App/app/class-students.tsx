@@ -13,6 +13,7 @@ import {
   Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft, User } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -32,6 +33,7 @@ type Student = {
 export default function ClassStudentsScreen() {
   const { classId, className, studentCount } = useLocalSearchParams();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { state } = useAuth();
   const schoolId = (state?.user as any)?.schoolId as string | undefined;
   
@@ -424,9 +426,9 @@ export default function ClassStudentsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.safeArea}>
+          <View style={[styles.header, { paddingTop: Math.max(15, insets.top + 15) }]}>
             <TouchableOpacity 
               style={styles.backButton}
               onPress={() => router.back()}
@@ -441,16 +443,16 @@ export default function ClassStudentsScreen() {
             <ActivityIndicator size="large" color="#1E40AF" />
             <Text style={styles.loadingText}>Loading students...</Text>
           </View>
-        </SafeAreaView>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.safeArea}>
+          <View style={[styles.header, { paddingTop: Math.max(15, insets.top + 15) }]}>
             <TouchableOpacity 
               style={styles.backButton}
               onPress={() => router.back()}
@@ -470,15 +472,15 @@ export default function ClassStudentsScreen() {
               <Text style={styles.retryButtonText}>Retry</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.safeArea}>
+        <View style={[styles.header, { paddingTop: Math.max(15, insets.top + 15) }]}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => router.back()}
@@ -496,7 +498,7 @@ export default function ClassStudentsScreen() {
           data={students}
           keyExtractor={(item) => item.id}
           renderItem={renderStudentItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(20, insets.bottom + 100) }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -513,22 +515,19 @@ export default function ClassStudentsScreen() {
             </View>
           }
         />
-      </SafeAreaView>
+      </View>
 
       {/* Submit button */}
-      <View style={{ padding: 16, backgroundColor: "white", borderTopWidth: 1, borderTopColor: "#E5E7EB" }}>
+      <View style={[styles.submitButtonContainer, { paddingBottom: Math.max(16, insets.bottom + 16) }]}>
         <TouchableOpacity
           disabled={submitting}
           onPress={submitAttendance}
-          style={{
-            height: 52,
-            borderRadius: 12,
-            backgroundColor: submitting ? "#93C5FD" : "#1D4ED8",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+          style={[
+            styles.submitButton,
+            { backgroundColor: submitting ? "#93C5FD" : "#1D4ED8" }
+          ]}
         >
-          <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>
+          <Text style={styles.submitButtonText}>
             {submitting ? "Submitting..." : "Submit Attendance"}
           </Text>
         </TouchableOpacity>
@@ -612,7 +611,7 @@ export default function ClassStudentsScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -632,6 +631,23 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+  },
+  submitButtonContainer: {
+    padding: 16,
+    backgroundColor: "white",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  submitButton: {
+    height: 52,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitButtonText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 16,
   },
   backButton: {
     padding: 8,
