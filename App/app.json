@@ -22,6 +22,12 @@
     },
     "ios": {
       "bundleIdentifier": "com.anonymous.hack"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8e779d67-3325-4535-8d03-45cdc02ea36b"
+      }
     }
   }
 }

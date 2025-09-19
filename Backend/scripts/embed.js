@@ -58,6 +58,7 @@ async function main() {
   console.log('Loading embedding model...');
   const model = await use.load();
   console.log('Generating embedding...');
+
   const embeddingTensor = await model.embed([text]);
   const embeddingArray2D = await embeddingTensor.array();
   const vector = embeddingArray2D[0];
