@@ -43,6 +43,7 @@
     "multer": "^2.0.2",
     "pngjs": "^7.0.0"
   },
+  "xTempDisabledDependencies": [],
   "devDependencies": {
     "nodemon": "^3.0.2"
   }
