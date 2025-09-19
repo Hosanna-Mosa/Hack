@@ -15,25 +15,25 @@ router.post('/text', [
   handleValidationErrors
 ], auth, authorize('admin', 'teacher'), controller.upsertTextEmbedding);
 
-// Upsert image embedding via multipart/form-data (file) or JSON base64/path
-router.post('/image', upload.single('image'), [
-  body('sourceId').notEmpty().withMessage('sourceId is required'),
-  handleValidationErrors
-], auth, authorize('admin', 'teacher'), controller.upsertImageEmbedding);
+// // Upsert image embedding via multipart/form-data (file) or JSON base64/path
+// router.post('/image', upload.single('image'), [
+//   body('sourceId').notEmpty().withMessage('sourceId is required'),
+//   handleValidationErrors
+// ], auth, authorize('admin', 'teacher'), controller.upsertImageEmbedding);
 
-// Get an embedding by source
-router.get('/:sourceType/:sourceId', [
-  param('sourceType').isString().notEmpty(),
-  param('sourceId').isString().notEmpty(),
-  handleValidationErrors
-], auth, controller.getEmbeddingBySource);
+// // Get an embedding by source
+// router.get('/:sourceType/:sourceId', [
+//   param('sourceType').isString().notEmpty(),
+//   param('sourceId').isString().notEmpty(),
+//   handleValidationErrors
+// ], auth, controller.getEmbeddingBySource);
 
-// Search by cosine similarity
-router.post('/search', [
-  body('vector').isArray({ min: 1 }).withMessage('vector is required'),
-  body('topK').optional().isInt({ min: 1, max: 100 }),
-  handleValidationErrors
-], auth, controller.searchByCosineSimilarity);
+// // Search by cosine similarity
+// router.post('/search', [
+//   body('vector').isArray({ min: 1 }).withMessage('vector is required'),
+//   body('topK').optional().isInt({ min: 1, max: 100 }),
+//   handleValidationErrors
+// ], auth, controller.searchByCosineSimilarity);
 
 // Compare an input image to stored embeddings
 router.post('/compare', upload.single('image'), [
