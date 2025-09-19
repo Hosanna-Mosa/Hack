@@ -11,6 +11,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BookOpen,
   Users,
@@ -29,6 +30,7 @@ export default function DashboardScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const insets = useSafeAreaInsets();
 
   const { state, logout } = useAuth();
   const { user } = state;
@@ -182,6 +184,7 @@ export default function DashboardScreen() {
             {
               opacity: fadeAnim,
               transform: [{ translateY: slideAnim }],
+              paddingTop: Math.max(20, insets.top + 20),
             },
           ]}
         >
@@ -219,7 +222,7 @@ export default function DashboardScreen() {
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(32, insets.bottom + 32) }]}
         >
           {error ? (
             <View style={{ paddingHorizontal: 24, paddingVertical: 12 }}>
@@ -347,7 +350,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 24,
-    paddingTop: 20,
     paddingBottom: 24,
   },
   headerLeft: {
