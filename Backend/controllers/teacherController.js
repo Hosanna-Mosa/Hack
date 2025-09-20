@@ -625,6 +625,4 @@ module.exports = {
   updateTeacherProfile,
   getTeacherDashboard,
   changePassword,
-  changePasswordFromDefault,
-  getClassesWithAttendanceStatus
 };
