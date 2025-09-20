@@ -1,1 +1,11 @@
 
+ ERROR  SyntaxError: /Users/hosanna/HACKTHON/proj-5/Hack/App/lib/faceUtils.ts: 'import' and 'export' may only appear at the top level. (36:0)
+
+  34 |  * Convert image URI to tensor
+  35 |  */
+> 36 | export async function imageUriToTensor3D(imageUri: string): Promise<tf.Tensor3D> {
+     | ^
+  37 |   const smallImage = await ImageManipulator.manipulateAsync(
+  38 |     imageUri,
+  39 |     [{ resize: { width: 224, height: 224 } }],
+
