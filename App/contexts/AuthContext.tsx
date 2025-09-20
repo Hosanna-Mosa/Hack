@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { User, AuthState } from "../types";
 import { AuthAPI, TokenManager } from "../lib/api";
+import { teacherDataService } from "../services/TeacherDataService";
 
 // Auth actions
 type AuthAction =
@@ -159,6 +160,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       dispatch({ type: "AUTH_START" });
       await TokenManager.setToken(payload.token);
+      
+      // Preload teacher data if user is a teacher (optimized for speed)
+      if (payload.user.role === 'teacher') {
+        // Don't await - let it run in background for faster login
+        teacherDataService.preloadTeacherData().catch(error => {
+          console.error('⚠️ Failed to preload teacher data:', error);
+        });
+      }
+      
       dispatch({
         type: "AUTH_SUCCESS",
         payload: { user: payload.user, token: payload.token },
@@ -199,6 +209,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       await AuthAPI.logout();
+      
+      // Clear teacher data from local storage
+      try {
+        await teacherDataService.clearTeacherData();
+        console.log('🧹 Teacher data cleared on logout');
+      } catch (error) {
+        console.error('⚠️ Failed to clear teacher data:', error);
+        // Don't fail logout if data clearing fails
+      }
+      
       dispatch({ type: "AUTH_LOGOUT" });
     } catch (error) {
       console.error("Logout error:", error);

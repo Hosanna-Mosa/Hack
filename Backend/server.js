@@ -32,10 +32,12 @@ app.use(cors({
     process.env.CORS_ORIGIN ||
     'https://hack-i6v3.onrender.com/api',
     'https://school-pannel.onrender.com',
+    'https://hack-parent-portal.onrender.com',
     'http://localhost:5173',
     'http://localhost:8081',
     'http://localhost:8080',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:8082'
   ],
   credentials: true
 }));
@@ -74,6 +76,14 @@ const PORT = process.env.PORT || 8000;
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Register scheduled jobs
+try {
+  const { registerMonthlyAttendanceEmailJob } = require('./jobs/monthlyAttendanceEmail');
+  registerMonthlyAttendanceEmailJob();
+} catch (err) {
+  console.error('Failed to register monthly email job:', err.message);
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {

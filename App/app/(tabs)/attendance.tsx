@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { API } from "../../lib/api";
 
 type ClassAttendance = {
@@ -24,6 +25,7 @@ type ClassAttendance = {
 export default function AttendanceScreen() {
   // Main attendance screen component
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [classes, setClasses] = useState<ClassAttendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -137,22 +139,22 @@ export default function AttendanceScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.safeArea, { paddingTop: Math.max(20, insets.top + 20) }]}>
           <Text style={styles.title}>Teacher Attendance</Text>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#1E40AF" />
             <Text style={styles.loadingText}>Loading classes...</Text>
           </View>
-        </SafeAreaView>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.safeArea, { paddingTop: Math.max(20, insets.top + 20) }]}>
           <Text style={styles.title}>Teacher Attendance</Text>
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
@@ -160,21 +162,21 @@ export default function AttendanceScreen() {
               Tap to retry
             </Text>
           </View>
-        </SafeAreaView>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
+      <View style={[styles.safeArea, { paddingTop: Math.max(20, insets.top + 20) }]}>
         <Text style={styles.title}>Teacher Attendance</Text>
         
         <FlatList
           data={classes}
           keyExtractor={(item) => item.id}
           renderItem={renderClassItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(20, insets.bottom + 20) }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -191,8 +193,8 @@ export default function AttendanceScreen() {
             </View>
           }
         />
-      </SafeAreaView>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
@@ -204,7 +206,6 @@ const styles = StyleSheet.create({
   safeArea: { 
     flex: 1, 
     paddingHorizontal: 20,
-    paddingTop: 20
   },
   title: {
     fontSize: 24,

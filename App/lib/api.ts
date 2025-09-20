@@ -390,6 +390,14 @@ export const TeacherAPI = {
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
+
+  // Change password from default (for first-time login)
+  async changePasswordFromDefault(newPassword: string): Promise<ApiResponse> {
+    return apiRequest("/teachers/change-password-from-default", {
+      method: "POST",
+      body: JSON.stringify({ newPassword }),
+    });
+  },
 };
 
 // Health check

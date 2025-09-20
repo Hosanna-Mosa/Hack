@@ -9,7 +9,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "embed": "node scripts/embed.js",
     "embed:image": "node scripts/embed-image.js",
-    "seed:parent": "node scripts/seed-parent.js"
+    "seed:parent": "node scripts/seed-parent.js",
+    "send:monthly:admin": "node scripts/send-monthly-to-admin.js"
   },
   "keywords": [
     "school",
@@ -33,6 +34,7 @@
     "cors": "^2.8.5",
     "destroy": "^1.2.0",
     "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
     "face-api.js": "^0.22.2",
@@ -43,8 +45,11 @@
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.6",
     "pngjs": "^7.0.0"
   },
+  "xTempDisabledDependencies": {},
   "devDependencies": {
     "nodemon": "^3.0.2"
   }

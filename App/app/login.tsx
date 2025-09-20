@@ -24,6 +24,7 @@ import {
 } from "lucide-react-native";
 import { useAuth } from "../contexts/AuthContext";
 import BackendStatus from "../components/BackendStatus";
+import PasswordChangeDialog from "../components/PasswordChangeDialog";
 import { TeacherAPI } from "../lib/api";
 
 export default function LoginScreen() {
@@ -32,6 +33,8 @@ export default function LoginScreen() {
   const [error, setError] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const [showPasswordChangeDialog, setShowPasswordChangeDialog] = useState<boolean>(false);
+  const [loggedInUser, setLoggedInUser] = useState<any>(null);
 
   const { state, loginWithTeacher, clearError } = useAuth();
   const { isLoading, error: authError } = state;
@@ -86,6 +89,49 @@ export default function LoginScreen() {
     ]).start();
   };
 
+  // Check if the entered password is a default password
+  const checkIfDefaultPassword = (enteredPassword: string, phoneNumber: string): boolean => {
+    const defaultPasswords = ['Teacher@123', 'teacher123', 'password123'];
+    
+    // Check against common default passwords
+    if (defaultPasswords.includes(enteredPassword)) {
+      return true;
+    }
+    
+    // Check if password follows the pattern: last 6 digits + "123"
+    if (phoneNumber.length >= 6) {
+      const lastSixDigits = phoneNumber.slice(-6);
+      const phoneBasedPassword = `${lastSixDigits}123`;
+      if (enteredPassword === phoneBasedPassword) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
+  // Handle password change dialog success
+  const handlePasswordChangeSuccess = async () => {
+    if (loggedInUser) {
+      // Now complete the login process
+      await loginWithTeacher({
+        user: loggedInUser as any,
+        token: loggedInUser.token || '', // The token should be available from the login response
+      });
+    }
+    setShowPasswordChangeDialog(false);
+    setLoggedInUser(null);
+  };
+
+  // Handle password change dialog close
+  const handlePasswordChangeClose = () => {
+    setShowPasswordChangeDialog(false);
+    setLoggedInUser(null);
+    // Clear the form
+    setPhoneNumber("");
+    setPassword("");
+  };
+
   const handleSignIn = async () => {
     setError("");
     clearError();
@@ -112,14 +158,24 @@ export default function LoginScreen() {
       });
 
       if (response.success && response.user && response.token) {
-        // Update auth context directly with teacher token (avoid /auth/login)
-        await loginWithTeacher({
-          user: response.user as any,
-          token: response.token,
-        });
-
-        // Navigation will be handled by the auth context
-        // If login is successful, the user will be redirected
+        // Check if the password is a default password
+        const isDefaultPassword = checkIfDefaultPassword(password, digitsOnly);
+        
+        if (isDefaultPassword) {
+          // Store user data and token, then show password change dialog
+          setLoggedInUser({
+            ...response.user,
+            token: response.token
+          });
+          setShowPasswordChangeDialog(true);
+        } else {
+          // Update auth context directly with teacher token (avoid /auth/login)
+          await loginWithTeacher({
+            user: response.user as any,
+            token: response.token,
+          });
+          // Navigation will be handled by the auth context
+        }
       } else {
         setError(
           response.message || "Login failed. Please check your credentials."
@@ -321,6 +377,14 @@ export default function LoginScreen() {
           </View>
         </KeyboardAvoidingView>
       </LinearGradient>
+      
+      {/* Password Change Dialog */}
+      <PasswordChangeDialog
+        visible={showPasswordChangeDialog}
+        onClose={handlePasswordChangeClose}
+        onSuccess={handlePasswordChangeSuccess}
+        teacherName={loggedInUser?.profile?.name || 'Teacher'}
+      />
     </SafeAreaView>
   );
 }

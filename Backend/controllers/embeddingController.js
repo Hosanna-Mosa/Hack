@@ -77,6 +77,72 @@ function euclideanDistanceNormalized(a, b) {
 
 // ---------- CONTROLLERS ----------
 
+// Insert/Update text embedding
+exports.upsertTextEmbedding = async (req, res, next) => {
+  try {
+    const { sourceId, sourceType = 'text', text, metadata } = req.body;
+    
+    if (!sourceId || !text) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'sourceId and text are required' 
+      });
+    }
+
+    console.log('[upsertTextEmbedding] Starting process for sourceId=', sourceId);
+
+    // For text embeddings, we'll create a simple hash-based vector
+    // In a real implementation, you might use a text embedding model
+    const textHash = require('crypto')
+      .createHash('sha256')
+      .update(text)
+      .digest('hex');
+    
+    // Convert hash to a 128-dimensional vector (similar to face embeddings)
+    const vector = [];
+    for (let i = 0; i < 128; i++) {
+      const byte1 = parseInt(textHash.substr((i * 2) % 64, 2), 16);
+      const byte2 = parseInt(textHash.substr(((i * 2) + 1) % 64, 2), 16);
+      vector.push((byte1 - 128) / 128 + (byte2 - 128) / 128);
+    }
+
+    // Normalize the vector
+    const normalizedVector = normalizeVector(vector);
+
+    console.log('[upsertTextEmbedding] Text vector generated. Length=', normalizedVector.length);
+
+    const payload = { 
+      sourceId, 
+      sourceType, 
+      text, 
+      vector: normalizedVector, 
+      metadata 
+    };
+
+    const doc = await Embedding.findOneAndUpdate(
+      { sourceId, sourceType },
+      payload,
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    
+    console.log('[upsertTextEmbedding] Embedding saved in DB. _id=', doc._id);
+
+    res.status(201).json({ 
+      success: true, 
+      data: { 
+        id: doc._id, 
+        dims: normalizedVector.length,
+        sourceId,
+        sourceType,
+        text: text.substring(0, 100) + (text.length > 100 ? '...' : '')
+      } 
+    });
+  } catch (error) {
+    console.error('[upsertTextEmbedding] ERROR:', error.message);
+    next(error);
+  }
+};
+
 // Insert/Update face embedding
 exports.upsertImageEmbedding = async (req, res, next) => {
   try {
