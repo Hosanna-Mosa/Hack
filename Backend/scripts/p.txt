@@ -1,19 +1,9 @@
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.3990
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.3990, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:21:53 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.2039
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.2039, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:22:21 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.2459
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.2459, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:22:33 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.4296
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.4296, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:22:52 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.1843
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.1843, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:23:10 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
+ ERROR  SyntaxError: /Users/hosanna/HACKTHON/proj-5/Hack/App/lib/faceUtils.ts: 'import' and 'export' may only appear at the top level. (36:0)
+
+  34 |  * Convert image URI to tensor
+  35 |  */
+> 36 | export async function imageUriToTensor3D(imageUri: string): Promise<tf.Tensor3D> {
+     | ^
+  37 |   const smallImage = await ImageManipulator.manipulateAsync(
+  38 |     imageUri,
+  39 |     [{ resize: { width: 224, height: 224 } }],
