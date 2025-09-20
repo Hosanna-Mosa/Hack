@@ -1,19 +1,19 @@
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.3990
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.3990, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:21:53 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.2039
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.2039, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:22:21 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.2459
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.2459, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:22:33 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.4296
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.4296, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:22:52 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
-[compareImage] Comparing query vector against 1 embeddings
-[compareImage] Candidate sourceId=68ca772c51f9bb1921006116, distance=0.1843
-[compareImage] Best match sourceId=68ca772c51f9bb1921006116, distance=0.1843, matched=true
-::ffff:10.236.197.55 - - [18/Sep/2025:10:23:10 +0000] "POST /api/embeddings/compare HTTP/1.1" 200 - "-" "okhttp/4.12.0"
+/Users/hosanna/HACKTHON/backprb/Hack/Backend/node_modules/express/lib/router/route.js:216
+        throw new Error(msg);
+        ^
+
+Error: Route.post() requires a callback function but got a [object Undefined]
+    at Route.<computed> [as post] (/Users/hosanna/HACKTHON/backprb/Hack/Backend/node_modules/express/lib/router/route.js:216:15)
+    at proto.<computed> [as post] (/Users/hosanna/HACKTHON/backprb/Hack/Backend/node_modules/express/lib/router/index.js:521:19)
+    at Object.<anonymous> (/Users/hosanna/HACKTHON/backprb/Hack/Backend/routes/embeddings.js:12:8)
+    at Module._compile (node:internal/modules/cjs/loader:1723:14)
+    at Object..js (node:internal/modules/cjs/loader:1888:10)
+    at Module.load (node:internal/modules/cjs/loader:1458:32)
+    at Function._load (node:internal/modules/cjs/loader:1275:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:234:24)
+    at Module.require (node:internal/modules/cjs/loader:1480:12)
+
+Node.js v23.7.0
+[nodemon] app crashed - waiting for file changes before starting...
+  
