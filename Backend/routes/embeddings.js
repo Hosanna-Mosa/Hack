@@ -16,10 +16,10 @@ router.post('/text', [
 ], auth, authorize('admin', 'teacher'), controller.upsertTextEmbedding);
 
 // // Upsert image embedding via multipart/form-data (file) or JSON base64/path
-// router.post('/image', upload.single('image'), [
-//   body('sourceId').notEmpty().withMessage('sourceId is required'),
-//   handleValidationErrors
-// ], auth, authorize('admin', 'teacher'), controller.upsertImageEmbedding);
+router.post('/image', upload.single('image'), [
+  body('sourceId').notEmpty().withMessage('sourceId is required'),
+  handleValidationErrors
+], auth, authorize('admin', 'teacher'), controller.upsertImageEmbedding);
 
 // // Get an embedding by source
 // router.get('/:sourceType/:sourceId', [
