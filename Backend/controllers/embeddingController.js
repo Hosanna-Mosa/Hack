@@ -3,10 +3,11 @@ const fs = require('fs');
 let tf;
 try {
   tf = require('@tensorflow/tfjs-node');
+  console.log('[tensorflow] Using @tensorflow/tfjs-node ✅ (native bindings loaded)');
 } catch (err) {
+  console.warn('[tensorflow] @tensorflow/tfjs-node NOT available, falling back to @tensorflow/tfjs ❌');
   tf = require('@tensorflow/tfjs');
 }
-
 // ---- Monkey patch for Node.js v22 ----
 const util = require('util');
 if (!util.isNullOrUndefined) {
@@ -18,6 +19,36 @@ const canvas = require('canvas');
 const faceapi = require('@vladmandic/face-api');
 const { Canvas, Image, ImageData } = canvas;
 faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+
+
+try {
+  const tfPath = require.resolve('@tensorflow/tfjs-node');
+  console.log('[check] Resolved tfjs-node path:', tfPath);
+} catch (e) {
+  console.warn('[check] @tensorflow/tfjs-node not found in node_modules');
+}
+try {
+  const faceapiPath = require.resolve('@vladmandic/face-api');
+  console.log('[check] Resolved face-api path:', faceapiPath);
+} catch (e) {
+  console.warn('[check] face-api not found in node_modules');
+}
+
+// Load models once at startup
+const MODEL_PATH = path.join(__dirname, '../models');
+async function loadModels() {
+  console.log('[face-api] Loading models from', MODEL_PATH);
+  try {
+    await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_PATH);
+    await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_PATH);
+    await faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_PATH);
+    console.log('[face-api] Models loaded successfully ✅');
+  } catch (err) {
+    console.error('[face-api] ERROR loading models ❌:', err.message);
+  }
+}
+loadModels();
+
 
 const Embedding = require('../models/Embedding');
 const Student = require('../models/Student');
@@ -34,27 +65,51 @@ loadModels();
 
 // Utility to load image from buffer/base64/path
 async function loadImage(buffer, base64, imagePath) {
+  console.log('[loadImage] buffer?', !!buffer, 'base64?', !!base64, 'path?', !!imagePath);
   let data;
   if (buffer) {
+    console.log('[loadImage] Buffer size =', buffer.length);
     data = buffer;
   } else if (base64) {
+    console.log('[loadImage] Base64 length =', base64.length);
     const b64 = base64.replace(/^data:image\/[a-zA-Z]+;base64,/, '');
     data = Buffer.from(b64, 'base64');
   } else if (imagePath) {
     const absolute = path.resolve(process.cwd(), imagePath);
+    console.log('[loadImage] Absolute path =', absolute);
     data = fs.readFileSync(absolute);
+    console.log('[loadImage] File size =', data.length);
   }
-  return await canvas.loadImage(data);
+
+  try {
+    const img = await canvas.loadImage(data);
+    console.log('[loadImage] Image loaded successfully ✅');
+    return img;
+  } catch (err) {
+    console.error('[loadImage] ERROR loading image ❌:', err.message);
+    return null;
+  }
 }
 
 // Extract face descriptor (128-d embedding) from image
-async function getFaceDescriptor(img) {
+sync function getFaceDescriptor(img) {
+  if (!img) {
+    console.error('[getFaceDescriptor] ERROR: img is null ❌');
+    return null;
+  }
+  console.log('[getFaceDescriptor] Running face detection...');
   const detection = await faceapi
     .detectSingleFace(img)
     .withFaceLandmarks()
     .withFaceDescriptor();
-  if (!detection) throw new Error('No face detected in image');
-  return Array.from(detection.descriptor);
+
+  if (!detection) {
+    console.error('[getFaceDescriptor] No face detected ❌');
+    throw new Error('No face detected in image');
+  }
+
+  console.log('[getFaceDescriptor] Face detected ✅, descriptor length =', detection.descriptor.length);
+  return detection.descriptor;
 }
 
 // Normalize vector to unit length
@@ -81,24 +136,21 @@ function euclideanDistanceNormalized(a, b) {
 exports.upsertTextEmbedding = async (req, res, next) => {
   try {
     const { sourceId, sourceType = 'text', text, metadata } = req.body;
-    
+
     if (!sourceId || !text) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'sourceId and text are required' 
+      return res.status(400).json({
+        success: false,
+        message: 'sourceId and text are required',
       });
     }
 
     console.log('[upsertTextEmbedding] Starting process for sourceId=', sourceId);
 
-    // For text embeddings, we'll create a simple hash-based vector
-    // In a real implementation, you might use a text embedding model
     const textHash = require('crypto')
       .createHash('sha256')
       .update(text)
       .digest('hex');
-    
-    // Convert hash to a 128-dimensional vector (similar to face embeddings)
+
     const vector = [];
     for (let i = 0; i < 128; i++) {
       const byte1 = parseInt(textHash.substr((i * 2) % 64, 2), 16);
@@ -106,17 +158,16 @@ exports.upsertTextEmbedding = async (req, res, next) => {
       vector.push((byte1 - 128) / 128 + (byte2 - 128) / 128);
     }
 
-    // Normalize the vector
     const normalizedVector = normalizeVector(vector);
 
     console.log('[upsertTextEmbedding] Text vector generated. Length=', normalizedVector.length);
 
-    const payload = { 
-      sourceId, 
-      sourceType, 
-      text, 
-      vector: normalizedVector, 
-      metadata 
+    const payload = {
+      sourceId,
+      sourceType,
+      text,
+      vector: normalizedVector,
+      metadata,
     };
 
     const doc = await Embedding.findOneAndUpdate(
@@ -124,18 +175,18 @@ exports.upsertTextEmbedding = async (req, res, next) => {
       payload,
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    
+
     console.log('[upsertTextEmbedding] Embedding saved in DB. _id=', doc._id);
 
-    res.status(201).json({ 
-      success: true, 
-      data: { 
-        id: doc._id, 
+    res.status(201).json({
+      success: true,
+      data: {
+        id: doc._id,
         dims: normalizedVector.length,
         sourceId,
         sourceType,
-        text: text.substring(0, 100) + (text.length > 100 ? '...' : '')
-      } 
+        text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+      },
     });
   } catch (error) {
     console.error('[upsertTextEmbedding] ERROR:', error.message);
@@ -146,45 +197,42 @@ exports.upsertTextEmbedding = async (req, res, next) => {
 // Insert/Update face embedding
 exports.upsertImageEmbedding = async (req, res, next) => {
   try {
-    const { sourceId, sourceType = 'student-face', metadata, filename } = req.body;
+    const { sourceId, sourceType = 'student-face', metadata } = req.body;
     if (!sourceId) {
       return res.status(400).json({ success: false, message: 'sourceId is required' });
-    }
-    if (!req.file && !req.body.imageBase64 && !req.body.imagePath) {
-      return res.status(400).json({ success: false, message: 'Provide image via multipart file, imageBase64, or imagePath' });
     }
 
     console.log('[upsertImageEmbedding] Starting process for sourceId=', sourceId);
 
     const img = await loadImage(req.file?.buffer, req.body.imageBase64, req.body.imagePath);
-    console.log('[upsertImageEmbedding] Image loaded');
+    if (!img) {
+      console.error('[upsertImageEmbedding] Image not loaded ❌');
+      return res.status(400).json({ success: false, message: 'Image not loaded' });
+    }
 
     let vector = await getFaceDescriptor(img);
-    vector = normalizeVector(vector); // ✅ normalize before saving
+    if (!vector) {
+      console.error('[upsertImageEmbedding] Failed to extract face descriptor ❌');
+      return res.status(400).json({ success: false, message: 'No face detected' });
+    }
 
-    console.log('[upsertImageEmbedding] Normalized descriptor extracted. Length=', vector.length);
-    console.log('[upsertImageEmbedding] Descriptor sample (first 10 values):', vector.slice(0, 10));
+    vector = normalizeVector(vector); 
+    console.log('[upsertImageEmbedding] Face vector normalized. Length=', vector.length);
 
-    const text = filename || req.body.imagePath || 'uploaded-face';
-    const payload = { sourceId, sourceType, text, vector, metadata };
+    const payload = { sourceId, sourceType, vector, metadata };
 
     const doc = await Embedding.findOneAndUpdate(
       { sourceId, sourceType },
       payload,
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
     console.log('[upsertImageEmbedding] Embedding saved in DB. _id=', doc._id);
 
-    if (sourceType === 'student-face' && sourceId) {
-      try {
-        await Student.findByIdAndUpdate(sourceId, { faceEmbedding: doc._id.toString() });
-        console.log(`[upsertImageEmbedding] Updated student ${sourceId} with face embedding ID: ${doc._id}`);
-      } catch (err) {
-        console.error(`[upsertImageEmbedding] Failed to update student ${sourceId}:`, err.message);
-      }
-    }
-
-    res.status(201).json({ success: true, data: { id: doc._id, dims: vector.length } });
+    res.status(201).json({
+      success: true,
+      data: { id: doc._id, dims: vector.length, sourceId, sourceType },
+    });
   } catch (error) {
     console.error('[upsertImageEmbedding] ERROR:', error.message);
     next(error);
