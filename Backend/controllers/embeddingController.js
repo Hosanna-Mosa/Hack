@@ -49,10 +49,13 @@ async function loadImage(buffer, base64, imagePath) {
 
 // Extract face descriptor (128-d embedding) from image
 async function getFaceDescriptor(img) {
+  if(!img) console.log("img is not found");
   const detection = await faceapi
     .detectSingleFace(img)
     .withFaceLandmarks()
     .withFaceDescriptor();
+
+  if(!detection) console.log("after dettekect is not found");
   if (!detection) throw new Error('No face detected in image');
   return Array.from(detection.descriptor);
 }
@@ -157,7 +160,8 @@ exports.upsertImageEmbedding = async (req, res, next) => {
     console.log('[upsertImageEmbedding] Starting process for sourceId=', sourceId);
 
     const img = await loadImage(req.file?.buffer, req.body.imageBase64, req.body.imagePath);
-    console.log('[upsertImageEmbedding] Image loaded');
+    if(!img) console.log('[upsertImageEmbedding] Image not loaded');
+    else console.log('[upsertImageEmbedding] Image loaded');
 
     let vector = await getFaceDescriptor(img);
     vector = normalizeVector(vector); // ✅ normalize before saving
