@@ -26,6 +26,6 @@ router.use('/teachers', teacherRoutes);
 // Recent activity (auth required)
 const { auth } = require('../middleware/auth');
 router.get('/activity/recent', auth, activityController.getRecentActivity);
-// router.use('/embeddings', require('./embeddings'));
+router.use('/embeddings', require('./embeddings'));
 
 module.exports = router;

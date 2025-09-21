@@ -1,15 +1,15 @@
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
-// let tf;
-// try {
-//   tf = require('@tensorflow/tfjs-node');
-//   console.log('Using @tensorflow/tfjs-node backend');
-// } catch (err) {
-//   tf = require('@tensorflow/tfjs');
-//   console.log('Falling back to @tensorflow/tfjs (pure JS) backend');
-// }
-// const use = require('@tensorflow-models/universal-sentence-encoder');
+let tf;
+try {
+  tf = require('@tensorflow/tfjs-node');
+  console.log('Using @tensorflow/tfjs-node backend');
+} catch (err) {
+  tf = require('@tensorflow/tfjs');
+  console.log('Falling back to @tensorflow/tfjs (pure JS) backend');
+}
+const use = require('@tensorflow-models/universal-sentence-encoder');
 const connectDB = require('../config/database');
 const Embedding = require('../models/Embedding');
 
@@ -55,17 +55,14 @@ async function main() {
 
   const text = await readInputText(args);
 
-  // console.log('Loading embedding model...');
-  // const model = await use.load();
-  // console.log('Generating embedding...');
+  console.log('Loading embedding model...');
+  const model = await use.load();
+  console.log('Generating embedding...');
 
-  // const embeddingTensor = await model.embed([text]);
-  // const embeddingArray2D = await embeddingTensor.array();
-  // const vector = embeddingArray2D[0];
-  // embeddingTensor.dispose();
-
-  console.log('TensorFlow functionality disabled - returning dummy vector');
-  const vector = new Array(512).fill(0); // Dummy vector
+  const embeddingTensor = await model.embed([text]);
+  const embeddingArray2D = await embeddingTensor.array();
+  const vector = embeddingArray2D[0];
+  embeddingTensor.dispose();
 
   const payload = {
     sourceId,
