@@ -54,7 +54,6 @@ const Embedding = require('../models/Embedding');
 const Student = require('../models/Student');
 
 // Load models once at startup
-const MODEL_PATH = path.join(__dirname, '../models');
 async function loadModels() {
   await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_PATH);
   await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_PATH);
