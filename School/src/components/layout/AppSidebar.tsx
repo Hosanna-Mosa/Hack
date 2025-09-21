@@ -28,6 +28,18 @@ const menuItems = [
     description: "Overview & analytics"
   },
   {
+    title: "Classes",
+    url: "/classes", 
+    icon: BookOpen,
+    description: "Manage classes & assignments"
+  },
+  {
+    title: "Teachers",
+    url: "/teachers",
+    icon: GraduationCap,
+    description: "Teacher management"
+  },
+  {
     title: "Students",
     url: "/students",
     icon: Users,
@@ -38,24 +50,6 @@ const menuItems = [
     url: "/attendance",
     icon: UserCheck,
     description: "Track & monitor attendance"
-  },
-  {
-    title: "Classes",
-    url: "/classes", 
-    icon: BookOpen,
-    description: "Manage classes & assignments"
-  },
-  {
-    title: "Photos",
-    url: "/photos",
-    icon: Users,
-    description: "Add & compare photos"
-  },
-  {
-    title: "Teachers",
-    url: "/teachers",
-    icon: GraduationCap,
-    description: "Teacher management"
   },
   {
     title: "Reports",

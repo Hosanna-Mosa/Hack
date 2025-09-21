@@ -193,38 +193,6 @@ export default function AttendancePage() {
               <Label className="mb-2 block">Pick a date</Label>
               <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} className="rounded-md border" />
             </div>
-            <div className="lg:col-span-2 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                <div className="space-y-1">
-                  <Label>Search student / roll / class</Label>
-                  <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. John, 10A, 23" />
-                </div>
-                <div className="space-y-1">
-                  <Label>Class</Label>
-                  <Input value={classFilter} onChange={(e) => setClassFilter(e.target.value)} placeholder="Class ID or name" />
-                </div>
-                <div className="space-y-1">
-                  <Label>Status</Label>
-                  <select className="border rounded h-9 px-3" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="">All</option>
-                    <option value="present">Present</option>
-                    <option value="absent">Absent</option>
-                    <option value="late">Late</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Start date</Label>
-                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label>End date</Label>
-                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={() => { setEndDate(endDate); }} disabled={loading}>{loading ? "Loading..." : "Refresh"}</Button>
-              </div>
-            </div>
           </div>
 
           {/* Drilldown: date -> classes -> students */}
@@ -298,36 +266,74 @@ export default function AttendancePage() {
               )}
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div className="space-y-1">
-              <Label>Search student / roll / class</Label>
-              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. John, 10A, 23" />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Search</Label>
+                <Input 
+                  value={query} 
+                  onChange={(e) => setQuery(e.target.value)} 
+                  placeholder="Student name, roll, or class" 
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Class</Label>
+                <Input 
+                  value={classFilter} 
+                  onChange={(e) => setClassFilter(e.target.value)} 
+                  placeholder="Class ID or name" 
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Status</Label>
+                <select 
+                  className="border rounded h-10 px-3 w-full bg-white" 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">All Status</option>
+                  <option value="present">Present</option>
+                  <option value="absent">Absent</option>
+                  <option value="late">Late</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Date Range</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    type="date" 
+                    value={startDate} 
+                    onChange={(e) => setStartDate(e.target.value)} 
+                    className="h-10 text-sm"
+                    placeholder="Start date"
+                  />
+                  <Input 
+                    type="date" 
+                    value={endDate} 
+                    onChange={(e) => setEndDate(e.target.value)} 
+                    className="h-10 text-sm"
+                    placeholder="End date"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label>Class</Label>
-              <Input value={classFilter} onChange={(e) => setClassFilter(e.target.value)} placeholder="Class ID or name" />
+            
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-muted-foreground">
+                {activeRecords.length > 0 && (
+                  <span>Showing {activeRecords.length} attendance record{activeRecords.length !== 1 ? 's' : ''}</span>
+                )}
+              </div>
+              <Button 
+                onClick={() => { setEndDate(endDate); }} 
+                disabled={loading}
+                className="px-6"
+              >
+                {loading ? "Loading..." : "Refresh"}
+              </Button>
             </div>
-            <div className="space-y-1">
-              <Label>Status</Label>
-              <select className="border rounded h-9 px-3" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="">All</option>
-                <option value="present">Present</option>
-                <option value="absent">Absent</option>
-                <option value="late">Late</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label>Start date</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>End date</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <Button onClick={() => { /* trigger useEffect by setting state to same value */ setEndDate(endDate); }} disabled={loading}>{loading ? "Loading..." : "Refresh"}</Button>
           </div>
 
           <div className="overflow-x-auto">

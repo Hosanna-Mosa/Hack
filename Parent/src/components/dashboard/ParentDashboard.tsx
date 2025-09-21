@@ -581,7 +581,7 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
           </div>
         )}
 
-        {activeTab === "calendar" && <AttendanceCalendar />}
+        {activeTab === "calendar" && <AttendanceCalendar studentId={selectedStudent?._id} />}
       </div>
     </div>
   );

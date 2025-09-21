@@ -10,7 +10,8 @@
     "embed": "node scripts/embed.js",
     "embed:image": "node scripts/embed-image.js",
     "seed:parent": "node scripts/seed-parent.js",
-    "send:monthly:admin": "node scripts/send-monthly-to-admin.js"
+    "send:monthly:admin": "node scripts/send-monthly-to-admin.js",
+    "send:daily:midday:admin": "node scripts/send-daily-midday-meal.js"
   },
   "keywords": [
     "school",
@@ -21,15 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    
-    "@tensorflow/tfjs": "^4.22.0",
-    "@tensorflow/tfjs-backend-cpu": "^4.22.0",
-    "@tensorflow/tfjs-converter": "^4.22.0",
-    "@tensorflow/tfjs-core": "^4.22.0",
-    "@tensorflow/tfjs-node": "^4.22.0",
-    "@vladmandic/face-api": "^1.7.15",
     "bcryptjs": "^2.4.3",
-    "canvas": "^3.2.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "destroy": "^1.2.0",
@@ -37,17 +30,13 @@
     "exceljs": "^4.4.0",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
-    "face-api.js": "^0.22.2",
     "helmet": "^7.1.0",
-    "image-js": "^1.0.0",
-    "jpeg-js": "^0.4.4",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
-    "nodemailer": "^7.0.6",
-    "pngjs": "^7.0.0"
+    "nodemailer": "^7.0.6"
   },
   "xTempDisabledDependencies": {},
   "devDependencies": {

@@ -134,6 +134,136 @@ async function buildMonthlyAttendanceWorkbook({ schoolName = 'School', monthName
   return Buffer.from(buffer);
 }
 
-module.exports = { buildMonthlyAttendanceWorkbook };
+async function buildDailyMidDayMealWorkbook({ schoolName = 'School', dateStr, summary, classes = [] }) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Attendance System';
+  workbook.created = new Date();
+
+  // Summary sheet
+  const wsSummary = workbook.addWorksheet('Summary');
+  wsSummary.columns = [
+    { header: 'Metric', key: 'metric', width: 20 },
+    { header: 'Count', key: 'count', width: 15 },
+    { header: 'Percent', key: 'percent', width: 12 }
+  ];
+  const total = Number(summary.total || 0);
+  const mealEligible = Number(summary.present || 0) + Number(summary.late || 0);
+  wsSummary.addRow({ metric: 'School', count: schoolName, percent: '' });
+  wsSummary.addRow({ metric: 'Date', count: dateStr, percent: '' });
+  wsSummary.addRow({ metric: 'Total Students', count: total, percent: total ? 1 : '' });
+  wsSummary.addRow({ metric: 'Present', count: Number(summary.present || 0), percent: total ? Number(summary.present || 0) / total : 0 });
+  wsSummary.addRow({ metric: 'Late', count: Number(summary.late || 0), percent: total ? Number(summary.late || 0) / total : 0 });
+  wsSummary.addRow({ metric: 'Mid-Day Meal Eligible', count: mealEligible, percent: total ? mealEligible / total : 0 });
+  wsSummary.addRow({ metric: 'Absent', count: Number(summary.absent || 0), percent: total ? Number(summary.absent || 0) / total : 0 });
+  wsSummary.addRow({ metric: 'Excused', count: Number(summary.excused || 0), percent: total ? Number(summary.excused || 0) / total : 0 });
+  
+  // Format percent column
+  for (let r = 1; r <= wsSummary.rowCount; r++) {
+    const cell = wsSummary.getCell(`C${r}`);
+    if (typeof cell.value === 'number') cell.numFmt = '0.00%';
+  }
+  wsSummary.getRow(1).font = { bold: true };
+
+  // Classes sheet
+  const wsClasses = workbook.addWorksheet('By Class');
+  wsClasses.columns = [
+    { header: 'Class', key: 'class', width: 24 },
+    { header: 'Present', key: 'present', width: 10 },
+    { header: 'Present %', key: 'presentPct', width: 10 },
+    { header: 'Late', key: 'late', width: 10 },
+    { header: 'Late %', key: 'latePct', width: 10 },
+    { header: 'Meal Eligible', key: 'mealEligible', width: 12 },
+    { header: 'Meal %', key: 'mealPct', width: 10 },
+    { header: 'Absent', key: 'absent', width: 10 },
+    { header: 'Absent %', key: 'absentPct', width: 10 },
+    { header: 'Excused', key: 'excused', width: 10 },
+    { header: 'Excused %', key: 'excusedPct', width: 10 },
+    { header: 'Total', key: 'total', width: 10 }
+  ];
+  
+  for (const c of classes) {
+    const tot = Number(c.total || 0);
+    const present = Number(c.present || 0);
+    const late = Number(c.late || 0);
+    const absent = Number(c.absent || 0);
+    const excused = Number(c.excused || 0);
+    const mealEligible = present + late;
+    const presentPct = tot ? present / tot : 0;
+    const latePct = tot ? late / tot : 0;
+    const mealPct = tot ? mealEligible / tot : 0;
+    const absentPct = tot ? absent / tot : 0;
+    const excusedPct = tot ? excused / tot : 0;
+    
+    wsClasses.addRow({
+      class: c.name || 'Class',
+      present,
+      presentPct,
+      late,
+      latePct,
+      mealEligible,
+      mealPct,
+      absent,
+      absentPct,
+      excused,
+      excusedPct,
+      total: tot
+    });
+  }
+  
+  // Format percent columns
+  if (wsClasses.rowCount > 1) {
+    for (let r = 2; r <= wsClasses.rowCount; r++) {
+      ['C', 'E', 'G', 'I', 'K', 'M'].forEach((col) => {
+        const cell = wsClasses.getCell(`${col}${r}`);
+        if (typeof cell.value === 'number') cell.numFmt = '0.00%';
+      });
+    }
+  }
+  wsClasses.getRow(1).font = { bold: true };
+
+  // One sheet per class with student-level breakdown
+  for (const c of classes) {
+    const sheetName = (c.name || 'Class').toString().substring(0, 28); // Excel sheet name limit
+    const ws = workbook.addWorksheet(sheetName);
+    ws.columns = [
+      { header: 'Student Code', key: 'code', width: 18 },
+      { header: 'Student', key: 'student', width: 28 },
+      { header: 'Present', key: 'present', width: 10 },
+      { header: 'Late', key: 'late', width: 10 },
+      { header: 'Meal Eligible', key: 'mealEligible', width: 12 },
+      { header: 'Absent', key: 'absent', width: 10 },
+      { header: 'Excused', key: 'excused', width: 10 },
+      { header: 'Total', key: 'total', width: 10 }
+    ];
+    
+    const students = Array.isArray(c.students) ? c.students : [];
+    for (const s of students) {
+      const present = Number(s.present || 0);
+      const late = Number(s.late || 0);
+      const absent = Number(s.absent || 0);
+      const excused = Number(s.excused || 0);
+      const total = Number(s.total || 0);
+      const mealEligible = present + late;
+      
+      const row = {
+        code: s.code || '',
+        student: s.name || 'Student',
+        present,
+        late,
+        mealEligible,
+        absent,
+        excused,
+        total
+      };
+      ws.addRow(row);
+    }
+    ws.getRow(1).font = { bold: true };
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
+module.exports = { buildMonthlyAttendanceWorkbook, buildDailyMidDayMealWorkbook };
 
 

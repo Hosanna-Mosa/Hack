@@ -271,6 +271,19 @@ exports.getStudentAttendance = async (req, res, next) => {
       timeOut: record.timeOut || null
     }));
 
+    // Get all attendance records for calendar
+    const allAttendanceRecords = attendanceRecords.map(record => ({
+      _id: record._id,
+      date: record.date.toISOString().split('T')[0],
+      status: record.status,
+      notes: record.notes || '',
+      timeIn: record.timeIn || null,
+      timeOut: record.timeOut || null,
+      reason: record.notes || '',
+      studentId: record.studentId,
+      className: student.classId?.name || 'Unknown Class'
+    }));
+
     res.json({ 
       success: true, 
       data: {
@@ -288,7 +301,8 @@ exports.getStudentAttendance = async (req, res, next) => {
           late: lateDays,
           attendanceRate: parseFloat(attendanceRate)
         },
-        recentActivity
+        recentActivity,
+        allRecords: allAttendanceRecords
       }
     });
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,34 +10,82 @@ import {
   XCircle, 
   AlertTriangle,
   Clock,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react";
 import { format, isToday, parseISO } from "date-fns";
+import { ParentAPI } from "@/lib/api";
 
 interface AttendanceRecord {
+  _id: string;
   date: string;
-  status: "present" | "absent" | "late";
+  status: "present" | "absent" | "late" | "excused";
   timeIn?: string;
   timeOut?: string;
   notes?: string;
   reason?: string;
+  studentId?: string;
+  className?: string;
 }
 
-export function AttendanceCalendar() {
+interface AttendanceCalendarProps {
+  studentId?: string;
+}
+
+export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock attendance data - would come from API
-  const attendanceRecords: AttendanceRecord[] = [
-    { date: "2024-01-15", status: "present", timeIn: "8:15 AM", timeOut: "3:30 PM" },
-    { date: "2024-01-14", status: "late", timeIn: "8:45 AM", timeOut: "3:30 PM", reason: "Traffic delay" },
-    { date: "2024-01-13", status: "present", timeIn: "8:10 AM", timeOut: "3:30 PM" },
-    { date: "2024-01-12", status: "absent", reason: "Sick with fever", notes: "Doctor's note provided" },
-    { date: "2024-01-11", status: "present", timeIn: "8:05 AM", timeOut: "3:30 PM" },
-    { date: "2024-01-10", status: "present", timeIn: "8:20 AM", timeOut: "3:30 PM" },
-    { date: "2024-01-09", status: "late", timeIn: "8:50 AM", timeOut: "3:30 PM", reason: "Medical appointment" },
-    { date: "2024-01-08", status: "present", timeIn: "8:12 AM", timeOut: "3:30 PM" },
-  ];
+  // Fetch attendance data from API
+  useEffect(() => {
+    const fetchAttendanceData = async () => {
+      if (!studentId) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const response = await ParentAPI.getStudentAttendance(studentId);
+        console.log('API Response:', response); // Debug log
+        
+        if (response.success && response.data) {
+          // Check if allRecords exists, otherwise fallback to recentActivity
+          const recordsData = response.data.allRecords || response.data.recentActivity || [];
+          
+          if (Array.isArray(recordsData)) {
+            const records = recordsData.map((record: any) => ({
+              _id: record._id || `temp_${Date.now()}_${Math.random()}`,
+              date: record.date,
+              status: record.status,
+              timeIn: record.timeIn,
+              timeOut: record.timeOut,
+              notes: record.notes,
+              reason: record.reason,
+              studentId: record.studentId || studentId,
+              className: record.className || response.data.student?.classId?.name || 'Unknown Class'
+            }));
+            setAttendanceRecords(records);
+          } else {
+            console.warn('Records data is not an array:', recordsData);
+            setAttendanceRecords([]);
+          }
+        } else {
+          console.warn('API response not successful:', response);
+          setAttendanceRecords([]);
+        }
+      } catch (err: any) {
+        console.error('Failed to fetch attendance data:', err);
+        setError(err.message || 'Failed to load attendance data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendanceData();
+  }, [studentId]);
 
   const getRecordForDate = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
@@ -49,6 +97,7 @@ export function AttendanceCalendar() {
       case "present": return <CheckCircle className="w-4 h-4 text-success" />;
       case "absent": return <XCircle className="w-4 h-4 text-danger" />;
       case "late": return <AlertTriangle className="w-4 h-4 text-warning" />;
+      case "excused": return <Clock className="w-4 h-4 text-blue-500" />;
       default: return null;
     }
   };
@@ -57,7 +106,8 @@ export function AttendanceCalendar() {
     const variants = {
       present: "default",
       absent: "destructive", 
-      late: "secondary"
+      late: "secondary",
+      excused: "outline"
     } as const;
     
     return (
@@ -80,6 +130,9 @@ export function AttendanceCalendar() {
     late: attendanceRecords
       .filter(r => r.status === "late")
       .map(r => parseISO(r.date)),
+    excused: attendanceRecords
+      .filter(r => r.status === "excused")
+      .map(r => parseISO(r.date)),
   };
 
   const modifiersStyles = {
@@ -96,6 +149,11 @@ export function AttendanceCalendar() {
     late: {
       backgroundColor: "hsl(var(--warning))",
       color: "hsl(var(--warning-foreground))",
+      borderRadius: "4px"
+    },
+    excused: {
+      backgroundColor: "hsl(var(--blue))",
+      color: "hsl(var(--blue-foreground))",
       borderRadius: "4px"
     },
   };
@@ -132,18 +190,30 @@ export function AttendanceCalendar() {
           {/* Calendar */}
           <Card className="lg:col-span-2 shadow-design-md border-0">
             <CardHeader>
-              <CardTitle>January 2024</CardTitle>
+              <CardTitle>{selectedDate ? format(selectedDate, "MMMM yyyy") : format(new Date(), "MMMM yyyy")}</CardTitle>
               <CardDescription>Click on any date to view attendance details</CardDescription>
             </CardHeader>
             <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                modifiers={calendarModifiers}
-                modifiersStyles={modifiersStyles}
-                className="rounded-md border w-full"
-              />
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>Loading attendance data...</span>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center py-8 text-destructive">
+                  <XCircle className="w-6 h-6 mr-2" />
+                  <span>{error}</span>
+                </div>
+              ) : (
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  modifiers={calendarModifiers}
+                  modifiersStyles={modifiersStyles}
+                  className="rounded-md border w-full"
+                />
+              )}
               
               {/* Legend */}
               <div className="mt-4 flex flex-wrap gap-4 text-sm">
@@ -158,6 +228,10 @@ export function AttendanceCalendar() {
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 bg-warning rounded"></div>
                   <span>Late</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                  <span>Excused</span>
                 </div>
               </div>
             </CardContent>

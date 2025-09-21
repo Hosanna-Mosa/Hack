@@ -85,6 +85,13 @@ try {
   console.error('Failed to register monthly email job:', err.message);
 }
 
+try {
+  const { registerDailyMidDayMealEmailJob } = require('./jobs/dailyMidDayMealEmail');
+  registerDailyMidDayMealEmailJob();
+} catch (err) {
+  console.error('Failed to register daily mid-day meal email job:', err.message);
+}
+
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {
   if (!QUIET_STARTUP) console.log(`Error: ${err.message}`);
