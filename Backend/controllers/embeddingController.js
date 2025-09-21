@@ -91,7 +91,7 @@ async function loadImage(buffer, base64, imagePath) {
 }
 
 // Extract face descriptor (128-d embedding) from image
-sync function getFaceDescriptor(img) {
+async function getFaceDescriptor(img) {
 async function getFaceDescriptor(img) {
   if (!img) {
     console.error('[getFaceDescriptor] ERROR: img is null ❌');
