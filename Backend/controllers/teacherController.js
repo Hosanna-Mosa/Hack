@@ -612,65 +612,65 @@ const getClassesWithAttendanceStatus = async (req, res, next) => {
   }
 };
 
-const changePasswordFromDefault = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    const { newPassword } = req.body;
+// const changePasswordFromDefault = async (req, res, next) => {
+//   try {
+//     const userId = req.user.id;
+//     const { newPassword } = req.body;
 
-    if (!newPassword) {
-      return res.status(400).json({ success: false, message: 'New password is required' });
-    }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
-    }
+//     if (!newPassword) {
+//       return res.status(400).json({ success: false, message: 'New password is required' });
+//     }
+//     if (newPassword.length < 6) {
+//       return res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+//     }
 
-    const teacher = await Teacher.findOne({ userId });
-    if (!teacher) {
-      return res.status(404).json({ success: false, message: 'Teacher not found' });
-    }
+//     const teacher = await Teacher.findOne({ userId });
+//     if (!teacher) {
+//       return res.status(404).json({ success: false, message: 'Teacher not found' });
+//     }
 
-    // Check if the current password is a default password
-    const defaultPasswords = ['Teacher@123', 'teacher123', 'password123'];
-    let isDefaultPassword = false;
+//     // Check if the current password is a default password
+//     const defaultPasswords = ['Teacher@123', 'teacher123', 'password123'];
+//     let isDefaultPassword = false;
 
-    for (const defaultPwd of defaultPasswords) {
-      const isMatch = await bcrypt.compare(defaultPwd, teacher.password);
-      if (isMatch) {
-        isDefaultPassword = true;
-        break;
-      }
-    }
+//     for (const defaultPwd of defaultPasswords) {
+//       const isMatch = await bcrypt.compare(defaultPwd, teacher.password);
+//       if (isMatch) {
+//         isDefaultPassword = true;
+//         break;
+//       }
+//     }
 
-    // Also check if password follows the pattern: last 6 digits + "123"
-    if (!isDefaultPassword) {
-      const phoneNumber = teacher.phoneNumber;
-      if (phoneNumber && phoneNumber.length >= 6) {
-        const lastSixDigits = phoneNumber.slice(-6);
-        const phoneBasedPassword = `${lastSixDigits}123`;
-        const isPhoneBasedMatch = await bcrypt.compare(phoneBasedPassword, teacher.password);
-        if (isPhoneBasedMatch) {
-          isDefaultPassword = true;
-        }
-      }
-    }
+//     // Also check if password follows the pattern: last 6 digits + "123"
+//     if (!isDefaultPassword) {
+//       const phoneNumber = teacher.phoneNumber;
+//       if (phoneNumber && phoneNumber.length >= 6) {
+//         const lastSixDigits = phoneNumber.slice(-6);
+//         const phoneBasedPassword = `${lastSixDigits}123`;
+//         const isPhoneBasedMatch = await bcrypt.compare(phoneBasedPassword, teacher.password);
+//         if (isPhoneBasedMatch) {
+//           isDefaultPassword = true;
+//         }
+//       }
+//     }
 
-    if (!isDefaultPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'This endpoint is only for changing default passwords. Please use the regular change password endpoint.' 
-      });
-    }
+//     if (!isDefaultPassword) {
+//       return res.status(400).json({ 
+//         success: false, 
+//         message: 'This endpoint is only for changing default passwords. Please use the regular change password endpoint.' 
+//       });
+//     }
 
-    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
-    teacher.password = hashedNewPassword;
-    await teacher.save();
+//     const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+//     teacher.password = hashedNewPassword;
+//     await teacher.save();
 
-    res.json({ success: true, message: 'Password changed successfully from default' });
-  } catch (error) {
-    console.error('Change password from default error:', error);
-    next(error);
-  }
-};
+//     res.json({ success: true, message: 'Password changed successfully from default' });
+//   } catch (error) {
+//     console.error('Change password from default error:', error);
+//     next(error);
+//   }
+// };
 // const changePasswordFromDefault = async (req, res, next) => {
 //   try {
 //     const userId = req.user.id;
