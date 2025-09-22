@@ -3,7 +3,7 @@ import { View, ActivityIndicator, FlatList, Text, TouchableOpacity, RefreshContr
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { BookOpen } from "lucide-react-native";
-import { ClassesAPI } from "../../lib/api";
+import { ClassesAPI, TeacherAPI } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function ClassesTab() {
@@ -17,12 +17,17 @@ export default function ClassesTab() {
   const load = async () => {
     try {
       setError("");
-      const res = await ClassesAPI.getClasses(state.user?.schoolId);
-      if (res.success && Array.isArray(res.data)) {
-        setClasses(res.data as any[]);
-      } else {
+      // Get only assigned classes for this teacher
+      const assigned = await TeacherAPI.getAssignedClasses();
+      
+      if (!assigned.success || !Array.isArray(assigned.classes) || assigned.classes.length === 0) {
         setClasses([]);
+        setError("No classes assigned to you. Contact your administrator.");
+        return;
       }
+
+      // Use the assigned classes directly
+      setClasses(assigned.classes as any[]);
     } catch (e: any) {
       setError(e?.message || "Failed to load classes");
     } finally {
@@ -40,7 +45,18 @@ export default function ClassesTab() {
     const id = String(item._id || item.id);
     const name = String(item.name || `${item?.grade ?? ""}${item?.section ?? ""}` || "Class");
     const count = (item.studentIds && Array.isArray(item.studentIds)) ? item.studentIds.length : undefined;
-    router.push({ pathname: "/class-students", params: { classId: id, className: name, studentCount: String(count ?? "") } } as any);
+    const today = new Date();
+    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    router.push({ 
+      pathname: "/class-students", 
+      params: { 
+        classId: id, 
+        className: name, 
+        studentCount: String(count ?? ""),
+        selectedDate: todayString
+      } 
+    } as any);
   };
 
   if (loading) {

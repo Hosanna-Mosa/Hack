@@ -28,22 +28,43 @@ export default function ReportsScreen() {
     setLoading(true);
     setError("");
     try {
-      const res = await API.attendance.getStats({ startDate, endDate, period });
-      if (!res.success) throw new Error(res.message || "Failed to load reports");
+      // First get the teacher's assigned classes
+      const assignedClasses = await TeacherAPI.getAssignedClasses();
+      if (!assignedClasses.success || !Array.isArray(assignedClasses.classes) || assignedClasses.classes.length === 0) {
+        setSummary({ total: 0, present: 0, absent: 0, late: 0, excused: 0 });
+        setTrendData([]);
+        setClassWise([]);
+        setError("No classes assigned to you. Contact your administrator.");
+        return;
+      }
 
-      // Backend returns: { data: { stats: [{ _id: status, count }], total } }
-      const stats = res.data?.stats || [];
-      const total = res.data?.total || 0;
-      const toCount = (key: string) => stats.find((s: any) => s._id === key)?.count || 0;
-      setSummary({
-        total,
-        present: toCount("present"),
-        absent: toCount("absent"),
-        late: toCount("late"),
-        excused: toCount("excused"),
+      const classIds = assignedClasses.classes.map((c: any) => String(c._id || c.id));
+
+      // Get stats for assigned classes only
+      const statsPromises = classIds.map(classId => 
+        API.attendance.getStats({ startDate, endDate, period, classId })
+      );
+      const statsResults = await Promise.all(statsPromises);
+
+      // Aggregate stats from all assigned classes
+      let totalStats = { present: 0, absent: 0, late: 0, excused: 0, total: 0 };
+      statsResults.forEach(res => {
+        if (res.success && res.data) {
+          const stats = res.data.stats || [];
+          const total = res.data.total || 0;
+          const toCount = (key: string) => stats.find((s: any) => s._id === key)?.count || 0;
+          
+          totalStats.present += toCount("present");
+          totalStats.absent += toCount("absent");
+          totalStats.late += toCount("late");
+          totalStats.excused += toCount("excused");
+          totalStats.total += total;
+        }
       });
 
-      // Fetch trend for last 5 days
+      setSummary(totalStats);
+
+      // Fetch trend for last 5 days for assigned classes only
       const days = 5;
       const dateEntries: Array<{ label: string; date: string }> = [];
       const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -58,8 +79,16 @@ export default function ReportsScreen() {
       }
 
       const trendRes = await Promise.all(
-        dateEntries.map((e) => API.attendance.getAttendanceRecords({ date: e.date }))
+        dateEntries.map((e) => 
+          Promise.all(classIds.map(classId => 
+            API.attendance.getAttendanceRecords({ date: e.date, classId })
+          )).then(results => ({
+            success: true,
+            data: results.flatMap(r => r.success ? r.data : [])
+          }))
+        )
       );
+      
       const trend: Array<{ label: string; value: number }> = trendRes.map((r, idx) => {
         const list = (r.success && Array.isArray(r.data)) ? (r.data as any[]) : [];
         const totalDay = list.length || 0;
@@ -69,7 +98,7 @@ export default function ReportsScreen() {
       });
       setTrendData(trend);
 
-      // Fetch class-wise for today using teacher endpoint
+      // Fetch class-wise for today using teacher endpoint (this is already correct)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const clsRes = await TeacherAPI.getClassesWithAttendanceStatus();
