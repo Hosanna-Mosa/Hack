@@ -34,7 +34,7 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-bg flex">
+    <div className="min-h-screen bg-gradient-bg flex flex-col lg:flex-row">
       {/* Hero Image Section */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <img 
@@ -54,31 +54,31 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
       </div>
 
       {/* Login Form Section */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-6">
+      <div className="flex-1 flex items-center justify-center p-3 sm:p-4 lg:p-6">
+        <div className="w-full max-w-sm sm:max-w-md space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-design-lg">
-            <School className="w-8 h-8 text-primary-foreground" />
+        <div className="text-center space-y-2 sm:space-y-3">
+          <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-design-lg">
+            <School className="w-6 h-6 sm:w-8 sm:h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Parent Portal</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Parent Portal</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Access your child's attendance records securely
           </p>
         </div>
 
         {/* Login Form */}
         <Card className="shadow-design-lg border-0">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl text-center">Sign In</CardTitle>
-            <CardDescription className="text-center">
+          <CardHeader className="space-y-1 pb-4 sm:pb-6">
+            <CardTitle className="text-lg sm:text-xl text-center">Sign In</CardTitle>
+            <CardDescription className="text-center text-sm sm:text-base">
               Enter your credentials to access the portal
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="px-4 sm:px-6">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile Number</Label>
+                <Label htmlFor="mobile" className="text-sm sm:text-base">Mobile Number</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -87,7 +87,7 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
                     placeholder="+91 9876543210"
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 h-10 sm:h-11 text-sm sm:text-base"
                     disabled={isLoading}
                     required
                   />
@@ -95,7 +95,7 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -104,7 +104,7 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 h-10 sm:h-11 text-sm sm:text-base"
                     disabled={isLoading}
                     required
                   />
@@ -122,7 +122,7 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
               <Button
                 type="submit" 
                 variant="hero"
-                className="w-full"
+                className="w-full h-10 sm:h-11 text-sm sm:text-base"
                 disabled={isLoading}
               >
                 {isLoading ? "Signing In..." : "Sign In"}
@@ -131,7 +131,7 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
               <div className="text-center">
                 <button
                   type="button"
-                  className="text-sm text-primary hover:text-primary-dark transition-colors"
+                  className="text-xs sm:text-sm text-primary hover:text-primary-dark transition-colors"
                   onClick={() => toast({
                     title: "Forgot Password",
                     description: "Please contact your school administrator for password reset assistance.",
@@ -145,7 +145,7 @@ export function LoginForm({ onLogin, isLoading = false }: LoginFormProps) {
         </Card>
 
           {/* Footer */}
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-xs sm:text-sm text-muted-foreground">
             <p>For technical support, contact your school administrator</p>
           </div>
         </div>
