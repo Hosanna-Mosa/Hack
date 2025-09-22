@@ -1,11 +1,11 @@
 const path = require('path');
 const fs = require('fs');
 let tf;
-try {
-  tf = require('@tensorflow/tfjs-node');
-} catch (err) {
-  tf = require('@tensorflow/tfjs');
-}
+// try {
+//   tf = require('@tensorflow/tfjs-node');
+// } catch (err) {
+//   tf = require('@tensorflow/tfjs');
+// }
 
 // ---- Monkey patch for Node.js v22 ----
 const util = require('util');
@@ -15,22 +15,22 @@ if (!util.isNullOrUndefined) {
 }
 
 const canvas = require('canvas');
-const faceapi = require('@vladmandic/face-api');
-const { Canvas, Image, ImageData } = canvas;
-faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+// const faceapi = require('@vladmandic/face-api');
+// const { Canvas, Image, ImageData } = canvas;
+// faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
 
 const Embedding = require('../models/Embedding');
 const Student = require('../models/Student');
 
 // Load models once at startup
-const MODEL_PATH = path.join(__dirname, '../models');
-async function loadModels() {
-  await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_PATH);
-  await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_PATH);
-  await faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_PATH);
-  console.log('[face-api] Models loaded from', MODEL_PATH);
-}
-loadModels();
+// const MODEL_PATH = path.join(__dirname, '../models');
+// async function loadModels() {
+//   await faceapi.nets.ssdMobilenetv1.loadFromDisk(MODEL_PATH);
+//   await faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_PATH);
+//   await faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_PATH);
+//   console.log('[face-api] Models loaded from', MODEL_PATH);
+// }
+// loadModels();
 
 // Utility to load image from buffer/base64/path
 async function loadImage(buffer, base64, imagePath) {
@@ -48,13 +48,20 @@ async function loadImage(buffer, base64, imagePath) {
 }
 
 // Extract face descriptor (128-d embedding) from image
+// async function getFaceDescriptor(img) {
+//   const detection = await faceapi
+//     .detectSingleFace(img)
+//     .withFaceLandmarks()
+//     .withFaceDescriptor();
+//   if (!detection) throw new Error('No face detected in image');
+//   return Array.from(detection.descriptor);
+// }
+
+// Dummy implementation when TensorFlow is disabled
 async function getFaceDescriptor(img) {
-  const detection = await faceapi
-    .detectSingleFace(img)
-    .withFaceLandmarks()
-    .withFaceDescriptor();
-  if (!detection) throw new Error('No face detected in image');
-  return Array.from(detection.descriptor);
+  console.log('TensorFlow functionality disabled - returning dummy face descriptor');
+  // Return a dummy 128-dimensional vector
+  return Array.from({ length: 128 }, () => Math.random() * 2 - 1);
 }
 
 // Normalize vector to unit length

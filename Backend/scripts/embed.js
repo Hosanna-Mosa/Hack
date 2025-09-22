@@ -10,6 +10,7 @@ try {
   console.log('Falling back to @tensorflow/tfjs (pure JS) backend');
 }
 const use = require('@tensorflow-models/universal-sentence-encoder');
+
 const connectDB = require('../config/database');
 const Embedding = require('../models/Embedding');
 
@@ -87,5 +88,4 @@ main().catch((err) => {
   console.error('Embedding job failed:', err);
   process.exit(1);
 });
-
 
