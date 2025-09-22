@@ -137,4 +137,35 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Mobile-specific improvements */
+  @media (max-width: 640px) {
+    /* Improve touch targets */
+    button, input, select, textarea {
+      min-height: 44px;
+    }
+    
+    /* Better scrolling on mobile */
+    html {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent zoom on input focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"],
+    textarea,
+    select {
+      font-size: 16px;
+    }
+  }
+
+  /* Tablet and desktop improvements */
+  @media (min-width: 768px) {
+    /* Better hover states for larger screens */
+    .hover\:bg-muted\/50:hover {
+      background-color: hsl(var(--muted) / 0.5);
+    }
+  }
 }
