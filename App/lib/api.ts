@@ -3,8 +3,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Base API configuration
 const API_BASE_URL = __DEV__
-  ? "http://10.179.89.143:8000/api"
-  : "https://hack-backend-08d7.onrender.com/api";
 
 // API Response types
 export interface ApiResponse<T = any> {
