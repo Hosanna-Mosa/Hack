@@ -159,50 +159,54 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Attendance Calendar</h2>
-          <p className="text-muted-foreground">View your child's daily attendance records</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground">Attendance Calendar</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">View your child's daily attendance records</p>
         </div>
         
-        <div className="flex space-x-2">
+        <div className="flex space-x-1 sm:space-x-2">
           <Button
             variant={viewMode === "calendar" ? "default" : "outline"}
             onClick={() => setViewMode("calendar")}
             size="sm"
+            className="text-xs sm:text-sm px-2 sm:px-3"
           >
-            Calendar View
+            <span className="hidden sm:inline">Calendar View</span>
+            <span className="sm:hidden">Calendar</span>
           </Button>
           <Button
             variant={viewMode === "list" ? "default" : "outline"}
             onClick={() => setViewMode("list")}
             size="sm"
+            className="text-xs sm:text-sm px-2 sm:px-3"
           >
-            List View
+            <span className="hidden sm:inline">List View</span>
+            <span className="sm:hidden">List</span>
           </Button>
         </div>
       </div>
 
       {viewMode === "calendar" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Calendar */}
           <Card className="lg:col-span-2 shadow-design-md border-0">
-            <CardHeader>
-              <CardTitle>{selectedDate ? format(selectedDate, "MMMM yyyy") : format(new Date(), "MMMM yyyy")}</CardTitle>
-              <CardDescription>Click on any date to view attendance details</CardDescription>
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg">{selectedDate ? format(selectedDate, "MMMM yyyy") : format(new Date(), "MMMM yyyy")}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Click on any date to view attendance details</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                  <span>Loading attendance data...</span>
+                <div className="flex items-center justify-center py-6 sm:py-8">
+                  <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin mr-2" />
+                  <span className="text-sm sm:text-base">Loading attendance data...</span>
                 </div>
               ) : error ? (
-                <div className="flex items-center justify-center py-8 text-destructive">
-                  <XCircle className="w-6 h-6 mr-2" />
-                  <span>{error}</span>
+                <div className="flex items-center justify-center py-6 sm:py-8 text-destructive">
+                  <XCircle className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                  <span className="text-sm sm:text-base">{error}</span>
                 </div>
               ) : (
                 <Calendar
@@ -216,21 +220,21 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
               )}
               
               {/* Legend */}
-              <div className="mt-4 flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-success rounded"></div>
+              <div className="mt-3 sm:mt-4 flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-success rounded"></div>
                   <span>Present</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-danger rounded"></div>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-danger rounded"></div>
                   <span>Absent</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-warning rounded"></div>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-warning rounded"></div>
                   <span>Late</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded"></div>
                   <span>Excused</span>
                 </div>
               </div>
@@ -239,27 +243,27 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
 
           {/* Selected Date Details */}
           <Card className="shadow-design-md border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="w-5 h-5" />
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Day Details</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 {selectedDate ? format(selectedDate, "EEEE, MMMM d, yyyy") : "Select a date"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {selectedRecord ? (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Status</span>
+                    <span className="text-xs sm:text-sm font-medium">Status</span>
                     {getStatusBadge(selectedRecord.status)}
                   </div>
                   
                   {selectedRecord.timeIn && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Time In</span>
-                      <span className="text-sm text-muted-foreground flex items-center">
+                      <span className="text-xs sm:text-sm font-medium">Time In</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground flex items-center">
                         <Clock className="w-3 h-3 mr-1" />
                         {selectedRecord.timeIn}
                       </span>
@@ -268,8 +272,8 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
                   
                   {selectedRecord.timeOut && (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Time Out</span>
-                      <span className="text-sm text-muted-foreground flex items-center">
+                      <span className="text-xs sm:text-sm font-medium">Time Out</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground flex items-center">
                         <Clock className="w-3 h-3 mr-1" />
                         {selectedRecord.timeOut}
                       </span>
@@ -278,8 +282,8 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
                   
                   {selectedRecord.reason && (
                     <div className="space-y-1">
-                      <span className="text-sm font-medium">Reason</span>
-                      <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                      <span className="text-xs sm:text-sm font-medium">Reason</span>
+                      <p className="text-xs sm:text-sm text-muted-foreground bg-muted p-2 rounded">
                         {selectedRecord.reason}
                       </p>
                     </div>
@@ -287,24 +291,24 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
                   
                   {selectedRecord.notes && (
                     <div className="space-y-1">
-                      <span className="text-sm font-medium">Additional Notes</span>
-                      <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                      <span className="text-xs sm:text-sm font-medium">Additional Notes</span>
+                      <p className="text-xs sm:text-sm text-muted-foreground bg-muted p-2 rounded">
                         {selectedRecord.notes}
                       </p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-6 sm:py-8 text-muted-foreground">
                   {selectedDate && isToday(selectedDate) ? (
                     <div>
-                      <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>Today's attendance is being recorded</p>
+                      <Clock className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm sm:text-base">Today's attendance is being recorded</p>
                     </div>
                   ) : (
                     <div>
-                      <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>No attendance record for this date</p>
+                      <FileText className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm sm:text-base">No attendance record for this date</p>
                     </div>
                   )}
                 </div>
@@ -315,22 +319,22 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
       ) : (
         /* List View */
         <Card className="shadow-design-md border-0">
-          <CardHeader>
-            <CardTitle>Attendance History</CardTitle>
-            <CardDescription>Complete list of attendance records</CardDescription>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Attendance History</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Complete list of attendance records</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {attendanceRecords.map((record, index) => (
                 <div 
                   key={index} 
-                  className="flex items-center justify-between p-4 border rounded-lg hover:shadow-design-sm transition-shadow"
+                  className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:shadow-design-sm transition-shadow"
                 >
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
                     {getStatusIcon(record.status)}
-                    <div>
-                      <p className="font-medium">{format(parseISO(record.date), "EEEE, MMMM d, yyyy")}</p>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm sm:text-base font-medium truncate">{format(parseISO(record.date), "EEEE, MMMM d, yyyy")}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
                         {record.timeIn && (
                           <span className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
@@ -345,11 +349,13 @@ export function AttendanceCalendar({ studentId }: AttendanceCalendarProps) {
                         )}
                       </div>
                       {record.reason && (
-                        <p className="text-sm text-muted-foreground mt-1">{record.reason}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">{record.reason}</p>
                       )}
                     </div>
                   </div>
-                  {getStatusBadge(record.status)}
+                  <div className="ml-2 flex-shrink-0">
+                    {getStatusBadge(record.status)}
+                  </div>
                 </div>
               ))}
             </div>

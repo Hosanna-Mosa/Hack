@@ -184,79 +184,96 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
   return (
     <div className="min-h-screen bg-gradient-bg">
       {/* Header */}
-      <header className="bg-card border-b shadow-design-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                <School className="w-5 h-5 text-primary-foreground" />
+      <header className="bg-card border-b shadow-design-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                <School className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
               </div>
-              <h1 className="text-lg font-semibold text-foreground">Parent Portal</h1>
+              <h1 className="text-base sm:text-lg font-semibold text-foreground">Parent Portal</h1>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="icon" onClick={onLogout}>
-                <LogOut className="w-5 h-5" />
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button variant="ghost" size="icon" onClick={onLogout} className="h-8 w-8 sm:h-10 sm:w-10">
+                <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6">
         {/* Student Information Header */}
         {isLoading ? (
-          <div className="mb-6 p-4 bg-card rounded-lg border shadow-design-sm">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-muted rounded-full animate-pulse"></div>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-card rounded-lg border shadow-design-sm">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-muted rounded-full animate-pulse"></div>
               <div className="flex-1">
-                <div className="h-6 bg-muted rounded animate-pulse mb-2"></div>
-                <div className="h-4 bg-muted rounded animate-pulse w-2/3"></div>
+                <div className="h-5 sm:h-6 bg-muted rounded animate-pulse mb-2"></div>
+                <div className="h-3 sm:h-4 bg-muted rounded animate-pulse w-2/3"></div>
               </div>
             </div>
           </div>
         ) : selectedStudent ? (
-          <div className="mb-6 p-4 bg-card rounded-lg border shadow-design-sm">
-            <div className="flex items-center space-x-4">
-              <Avatar className="w-16 h-16">
-                <AvatarImage src={selectedStudent.photoUrl} alt={selectedStudent.name} />
-                <AvatarFallback className="text-lg">
-                  {selectedStudent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-foreground">{selectedStudent.name}</h2>
-                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                  <span>ID: {selectedStudent.studentId}</span>
-                  {selectedStudent.classId && (
-                    <span>• {selectedStudent.classId.grade} {selectedStudent.classId.section}</span>
-                  )}
-                  {selectedStudent.academicInfo?.admissionNumber && (
-                    <span>• Admission: {selectedStudent.academicInfo.admissionNumber}</span>
-                  )}
+          <div className="mb-4 sm:mb-6 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl border border-primary/10 shadow-design-md overflow-hidden">
+            <div className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <Avatar className="w-16 h-16 sm:w-20 sm:h-20 ring-4 ring-primary/10">
+                      <AvatarImage src={selectedStudent.photoUrl} alt={selectedStudent.name} />
+                      <AvatarFallback className="text-lg sm:text-xl font-bold bg-gradient-primary text-primary-foreground">
+                        {selectedStudent.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success rounded-full border-2 border-background"></div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl sm:text-3xl font-bold text-foreground mb-1">{selectedStudent.name}</h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-sm sm:text-base text-muted-foreground">
+                      <span className="font-medium">ID: {selectedStudent.studentId}</span>
+                      {selectedStudent.classId && (
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded-md text-xs sm:text-sm font-medium">
+                          {selectedStudent.classId.grade} {selectedStudent.classId.section}
+                        </span>
+                      )}
+                    </div>
+                    {selectedStudent.academicInfo?.admissionNumber && (
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        <span className="font-medium">Admission:</span> {selectedStudent.academicInfo.admissionNumber}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">Academic Year</div>
-                <div className="font-semibold">2024-2025</div>
+                <div className="flex flex-col sm:items-end space-y-2">
+                  <div className="text-right">
+                    <div className="text-xs sm:text-sm text-muted-foreground font-medium">Academic Year</div>
+                    <div className="text-lg sm:text-xl font-bold text-primary">2024-2025</div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-success rounded-full"></div>
+                    <span className="text-xs sm:text-sm font-medium text-success">Active</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="mb-6 p-4 bg-card rounded-lg border shadow-design-sm">
-            <div className="text-center py-8">
-              <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No Student Selected</h3>
-              <p className="text-muted-foreground">Please select a student to view their information</p>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-card rounded-lg border shadow-design-sm">
+            <div className="text-center py-6 sm:py-8">
+              <User className="w-10 h-10 sm:w-12 sm:h-12 text-muted-foreground mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">No Student Selected</h3>
+              <p className="text-sm sm:text-base text-muted-foreground">Please select a student to view their information</p>
             </div>
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg w-fit">
+        <div className="flex space-x-1 mb-4 sm:mb-6 bg-muted p-1 rounded-lg w-full sm:w-fit">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === "overview" 
                 ? "bg-card text-primary shadow-design-sm" 
                 : "text-muted-foreground hover:text-foreground"
@@ -266,53 +283,54 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
           </button>
           <button
             onClick={() => setActiveTab("calendar")}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-all ${
               activeTab === "calendar" 
                 ? "bg-card text-primary shadow-design-sm" 
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Calendar className="w-4 h-4 mr-2 inline" />
-            Calendar
+            <Calendar className="w-4 h-4 mr-1 sm:mr-2 inline" />
+            <span className="hidden sm:inline">Calendar</span>
+            <span className="sm:hidden">Cal</span>
           </button>
         </div>
 
         {activeTab === "overview" && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Student Selection and Profile Card */}
             <Card className="shadow-design-md border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-3">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="flex items-center space-x-2 sm:space-x-3">
                   {isLoading ? (
-                    <Loader2 className="w-12 h-12 animate-spin" />
+                    <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin" />
                   ) : selectedStudent ? (
                     <>
-                      <Avatar className="w-12 h-12">
+                      <Avatar className="w-10 h-10 sm:w-12 sm:h-12">
                         <AvatarImage src={selectedStudent.photoUrl} alt={selectedStudent.name} />
                         <AvatarFallback>
-                          <User className="w-6 h-6" />
+                          <User className="w-5 h-5 sm:w-6 sm:h-6" />
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <h3 className="text-lg font-semibold">{selectedStudent.name}</h3>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base sm:text-lg font-semibold truncate">{selectedStudent.name}</h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {selectedStudent.classId ? `${selectedStudent.classId.grade} • ${selectedStudent.classId.section}` : 'No class assigned'}
                         </p>
                       </div>
                     </>
                   ) : (
                     <div>
-                      <h3 className="text-lg font-semibold">No Students Found</h3>
-                      <p className="text-sm text-muted-foreground">Please contact your school administrator</p>
+                      <h3 className="text-base sm:text-lg font-semibold">No Students Found</h3>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Please contact your school administrator</p>
                     </div>
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4">
                 {selectedStudent && (
                   <>
                     {/* Basic Information */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                       <div>
                         <p className="text-muted-foreground">Student ID</p>
                         <p className="font-medium">{selectedStudent.studentId}</p>
@@ -325,9 +343,9 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
                     {/* Academic Information */}
                     {selectedStudent.academicInfo && (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-foreground">Academic Information</h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2 sm:space-y-3">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground">Academic Information</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                           {selectedStudent.academicInfo.admissionNumber && (
                             <div>
                               <p className="text-muted-foreground">Admission Number</p>
@@ -354,9 +372,9 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
                     {/* Personal Information */}
                     {selectedStudent.dateOfBirth && (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-foreground">Personal Information</h4>
-                        <div className="text-sm">
+                      <div className="space-y-2 sm:space-y-3">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground">Personal Information</h4>
+                        <div className="text-xs sm:text-sm">
                           <p className="text-muted-foreground">Date of Birth</p>
                           <p className="font-medium">
                             {new Date(selectedStudent.dateOfBirth).toLocaleDateString()}
@@ -367,9 +385,9 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
                     {/* Contact Information */}
                     {selectedStudent.contactInfo && (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-foreground">Contact Information</h4>
-                        <div className="space-y-2 text-sm">
+                      <div className="space-y-2 sm:space-y-3">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground">Contact Information</h4>
+                        <div className="space-y-2 text-xs sm:text-sm">
                           {selectedStudent.contactInfo.address && (
                             <div>
                               <p className="text-muted-foreground">Address</p>
@@ -400,9 +418,9 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
                     {/* Transport Information */}
                     {selectedStudent.academicInfo?.transportInfo && (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-foreground">Transport Information</h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="space-y-2 sm:space-y-3">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground">Transport Information</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                           {selectedStudent.academicInfo.transportInfo.route && (
                             <div>
                               <p className="text-muted-foreground">Route</p>
@@ -427,9 +445,9 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
                     {/* Medical Information */}
                     {selectedStudent.contactInfo?.medicalInfo && (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-foreground">Medical Information</h4>
-                        <div className="space-y-2 text-sm">
+                      <div className="space-y-2 sm:space-y-3">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground">Medical Information</h4>
+                        <div className="space-y-2 text-xs sm:text-sm">
                           {selectedStudent.contactInfo.medicalInfo.bloodGroup && (
                             <div>
                               <p className="text-muted-foreground">Blood Group</p>
@@ -453,15 +471,15 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
                     )}
 
                     {/* Student Status */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-foreground">Status</h4>
+                    <div className="space-y-2 sm:space-y-3">
+                      <h4 className="text-xs sm:text-sm font-semibold text-foreground">Status</h4>
                       <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${selectedStudent.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                        <span className="text-sm font-medium">
+                        <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${selectedStudent.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                        <span className="text-xs sm:text-sm font-medium">
                           {selectedStudent.isActive ? 'Active' : 'Inactive'}
                         </span>
                         {selectedStudent.status && (
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-xs sm:text-sm text-muted-foreground">
                             • {selectedStudent.status.charAt(0).toUpperCase() + selectedStudent.status.slice(1)}
                           </span>
                         )}
@@ -474,14 +492,14 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
                 {/* Student Selection Dropdown */}
                 {students.length > 1 && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Select Student:</label>
+                    <label className="text-xs sm:text-sm font-medium">Select Student:</label>
                     <select 
                       value={selectedStudent?._id || ''} 
                       onChange={(e) => {
                         const student = students.find(s => s._id === e.target.value);
                         setSelectedStudent(student || null);
                       }}
-                      className="w-full p-2 border rounded-md"
+                      className="w-full p-2 text-xs sm:text-sm border rounded-md"
                     >
                       {students.map((student) => (
                         <option key={student._id} value={student._id}>
@@ -496,47 +514,47 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
             {/* Attendance Overview */}
             <Card className="shadow-design-md border-0">
-              <CardHeader>
-                <CardTitle>Attendance Overview</CardTitle>
-                <CardDescription>Current academic year statistics</CardDescription>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Attendance Overview</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Current academic year statistics</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4">
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin" />
+                  <div className="flex items-center justify-center py-6 sm:py-8">
+                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin" />
                   </div>
                 ) : attendanceStats ? (
                   <>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">{attendanceStats.attendanceRate}%</div>
-                      <p className="text-sm text-muted-foreground">Overall Attendance Rate</p>
+                      <div className="text-2xl sm:text-3xl font-bold text-primary">{attendanceStats.attendanceRate}%</div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Overall Attendance Rate</p>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
                       <div className="text-center">
-                        <div className="text-2xl font-semibold text-success">{attendanceStats.present}</div>
+                        <div className="text-lg sm:text-2xl font-semibold text-success">{attendanceStats.present}</div>
                         <p className="text-muted-foreground">Present</p>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-semibold text-danger">{attendanceStats.absent}</div>
+                        <div className="text-lg sm:text-2xl font-semibold text-danger">{attendanceStats.absent}</div>
                         <p className="text-muted-foreground">Absent</p>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-semibold text-warning">{attendanceStats.late}</div>
+                        <div className="text-lg sm:text-2xl font-semibold text-warning">{attendanceStats.late}</div>
                         <p className="text-muted-foreground">Late</p>
                       </div>
                     </div>
                     
-                    <div className="w-full bg-muted rounded-full h-2">
+                    <div className="w-full bg-muted rounded-full h-1.5 sm:h-2">
                       <div 
-                        className="bg-gradient-secondary h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-secondary h-1.5 sm:h-2 rounded-full transition-all duration-300"
                         style={{ width: `${attendanceStats.attendanceRate}%` }}
                       />
                     </div>
                   </>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No attendance data available</p>
+                  <div className="text-center py-6 sm:py-8">
+                    <p className="text-xs sm:text-sm text-muted-foreground">No attendance data available</p>
                   </div>
                 )}
               </CardContent>
@@ -544,35 +562,37 @@ export function ParentDashboard({ onLogout }: ParentDashboardProps) {
 
             {/* Recent Activity */}
             <Card className="shadow-design-md border-0">
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Last 5 school days</CardDescription>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Recent Activity</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Last 5 school days</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin" />
+                  <div className="flex items-center justify-center py-6 sm:py-8">
+                    <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin" />
                   </div>
                 ) : recentActivity.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {recentActivity.map((activity, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center space-x-3">
+                      <div key={index} className="flex items-center justify-between p-2 sm:p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
                           {getStatusIcon(activity.status)}
-                          <div>
-                            <p className="text-sm font-medium">{activity.date}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-medium truncate">{activity.date}</p>
                             {activity.notes && (
-                              <p className="text-xs text-muted-foreground">{activity.notes}</p>
+                              <p className="text-xs text-muted-foreground truncate">{activity.notes}</p>
                             )}
                           </div>
                         </div>
-                        {getStatusBadge(activity.status)}
+                        <div className="ml-2 flex-shrink-0">
+                          {getStatusBadge(activity.status)}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No recent activity</p>
+                  <div className="text-center py-6 sm:py-8">
+                    <p className="text-xs sm:text-sm text-muted-foreground">No recent activity</p>
                   </div>
                 )}
               </CardContent>
