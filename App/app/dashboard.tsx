@@ -93,28 +93,47 @@ export default function DashboardScreen() {
             );
           }
         } else {
-          // Fallback: compute from other endpoints
+          // Fallback: compute from teacher's assigned classes only
           const today = new Date();
           const yyyy = today.getFullYear();
           const mm = String(today.getMonth() + 1).padStart(2, "0");
           const dd = String(today.getDate()).padStart(2, "0");
           const isoDate = `${yyyy}-${mm}-${dd}`;
 
-          const [studentsResp, classesResp, attendanceResp] = await Promise.all([
-            StudentsAPI.getStudents(),
-            ClassesAPI.getClasses(user?.schoolId),
-            AttendanceAPI.getAttendanceRecords({ date: isoDate }),
-          ]);
+          // Get teacher's assigned classes first
+          const assignedClasses = await TeacherAPI.getAssignedClasses();
+          if (!assignedClasses.success || !Array.isArray(assignedClasses.classes) || assignedClasses.classes.length === 0) {
+            setMetrics({ totalStudents: 0, presentToday: 0, classesCount: 0 });
+            setRecentActivities([]);
+            setError("No classes assigned to you. Contact your administrator.");
+            return;
+          }
 
-          const totalStudents = studentsResp?.success && Array.isArray(studentsResp.data)
-            ? (studentsResp.data as any[]).length
-            : 0;
-          const classesCount = classesResp?.success && Array.isArray(classesResp.data)
-            ? (classesResp.data as any[]).length
-            : 0;
-          const presentToday = attendanceResp?.success && Array.isArray(attendanceResp.data)
-            ? (attendanceResp.data as any[]).filter((r: any) => r.status === "present").length
-            : 0;
+          const classIds = assignedClasses.classes.map((c: any) => String(c._id || c.id));
+          const classesCount = assignedClasses.classes.length;
+
+          // Get students from assigned classes only
+          const studentsPromises = classIds.map(classId => 
+            ClassesAPI.getStudentsByClass(classId)
+          );
+          const studentsResults = await Promise.all(studentsPromises);
+          
+          const totalStudents = studentsResults.reduce((total, resp) => {
+            return total + (resp?.success && Array.isArray(resp.data) ? resp.data.length : 0);
+          }, 0);
+
+          // Get attendance records for assigned classes only
+          const attendancePromises = classIds.map(classId => 
+            AttendanceAPI.getAttendanceRecords({ date: isoDate, classId })
+          );
+          const attendanceResults = await Promise.all(attendancePromises);
+          
+          const presentToday = attendanceResults.reduce((total, resp) => {
+            if (resp?.success && Array.isArray(resp.data)) {
+              return total + resp.data.filter((r: any) => r.status === "present").length;
+            }
+            return total;
+          }, 0);
 
           setMetrics({ totalStudents, presentToday, classesCount });
           setRecentActivities([]);
@@ -144,28 +163,31 @@ export default function DashboardScreen() {
 
   async function navigateToStudents() {
     try {
-      // Try assigned classes first
+      // Only use assigned classes
       const assigned = await TeacherAPI.getAssignedClasses();
-      let first: any | null = null;
-      if (assigned.success && Array.isArray(assigned.data) && assigned.data.length > 0) {
-        first = (assigned.data as any[])[0];
-      } else {
-        const cls = await ClassesAPI.getClasses(user?.schoolId);
-        if (cls.success && Array.isArray(cls.data) && cls.data.length > 0) {
-          first = (cls.data as any[])[0];
-        }
-      }
-
-      if (first) {
+      if (assigned.success && Array.isArray(assigned.classes) && assigned.classes.length > 0) {
+        const first = (assigned.classes as any[])[0];
         const id = String(first._id || first.id);
         const name = String(first.name || first.className || "Students");
         const count = (first.studentIds && Array.isArray(first.studentIds)) ? first.studentIds.length : undefined;
-        router.push({ pathname: "/class-students", params: { classId: id, className: name, studentCount: String(count ?? "") } } as any);
+        const today = new Date();
+        const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
+        router.push({ 
+          pathname: "/class-students", 
+          params: { 
+            classId: id, 
+            className: name, 
+            studentCount: String(count ?? ""),
+            selectedDate: todayString
+          } 
+        } as any);
       } else {
-        router.push("/class-students" as any);
+        // No assigned classes - navigate to students tab instead
+        router.push("/(tabs)/students" as any);
       }
     } catch {
-      router.push("/class-students" as any);
+      router.push("/(tabs)/students" as any);
     }
   }
 

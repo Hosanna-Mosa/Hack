@@ -7,6 +7,7 @@ const API_BASE_URL = __DEV__
   : "https://hack-backend-08d7.onrender.com/api"
     "http://localhost:8000/api";
 
+
 // API Response types
 export interface ApiResponse<T = any> {
   success: boolean;

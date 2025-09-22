@@ -13,43 +13,45 @@ export default function StudentsTab() {
   const [error, setError] = useState<string>("");
   const [students, setStudents] = useState<any[]>([]);
 
-  // Load students across all classes (assigned to teacher; fallback to all school classes)
+  // Load students only from classes assigned to the teacher
   const load = async () => {
     try {
       setError("");
-      // gather class ids
-      const classIds: Array<{ id: string; name?: string; grade?: any; section?: any }> = [];
+      // Get only assigned classes for this teacher
       const assigned = await TeacherAPI.getAssignedClasses();
-      if (assigned.success && Array.isArray(assigned.data) && assigned.data.length > 0) {
-        (assigned.data as any[]).forEach((c: any) => {
-          classIds.push({ id: String(c._id || c.id), name: c.name, grade: c.grade, section: c.section });
+      
+      if (!assigned.success || !Array.isArray(assigned.classes) || assigned.classes.length === 0) {
+        setStudents([]);
+        setError("No classes assigned to you. Contact your administrator.");
+        return;
+      }
+
+      // Process assigned classes
+      const classIds: Array<{ id: string; name?: string; grade?: any; section?: any }> = [];
+      (assigned.classes as any[]).forEach((c: any) => {
+        classIds.push({ 
+          id: String(c._id || c.id), 
+          name: c.name, 
+          grade: c.grade, 
+          section: c.section 
         });
-      } else {
-        const cls = await ClassesAPI.getClasses(state.user?.schoolId);
-        if (cls.success && Array.isArray(cls.data)) {
-          (cls.data as any[]).forEach((c: any) => {
-            classIds.push({ id: String(c._id || c.id), name: c.name, grade: c.grade, section: c.section });
+      });
+
+      // Fetch students only from assigned classes
+      const results = await Promise.all(
+        classIds.map((c) => ClassesAPI.getStudentsByClass(c.id).then((r) => ({ r, meta: c })))
+      );
+
+      const aggregated: any[] = [];
+      results.forEach(({ r, meta }) => {
+        if (r.success && Array.isArray(r.data)) {
+          (r.data as any[]).forEach((s: any) => {
+            aggregated.push({ ...s, classMeta: meta });
           });
         }
-      }
-
-      if (classIds.length > 0) {
-        const results = await Promise.all(
-          classIds.map((c) => ClassesAPI.getStudentsByClass(c.id).then((r) => ({ r, meta: c })))
-        );
-
-        const aggregated: any[] = [];
-        results.forEach(({ r, meta }) => {
-          if (r.success && Array.isArray(r.data)) {
-            (r.data as any[]).forEach((s: any) => {
-              aggregated.push({ ...s, classMeta: meta });
-            });
-          }
-        });
-        setStudents(aggregated);
-      } else {
-        setStudents([]);
-      }
+      });
+      
+      setStudents(aggregated);
     } catch (e: any) {
       setError(e?.message || "Failed to load students");
     } finally {

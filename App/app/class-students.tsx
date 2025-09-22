@@ -31,7 +31,7 @@ type Student = {
 };
 
 export default function ClassStudentsScreen() {
-  const { classId, className, studentCount } = useLocalSearchParams();
+  const { classId, className, studentCount, selectedDate } = useLocalSearchParams();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state } = useAuth();
@@ -81,11 +81,29 @@ export default function ClassStudentsScreen() {
     setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, status } : s)));
   };
 
+  // Helper function to convert local date string to proper date for database
+  const createLocalDate = (dateString: string) => {
+    // If it's in YYYY-MM-DD format, create date at local timezone
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    // Fallback to parsing as regular date
+    return new Date(dateString);
+  };
+
   const submitAttendance = async () => {
     try {
       setSubmitting(true);
-      const today = new Date();
-      const dateIso = today.toISOString();
+      // Use the selected date from calendar, fallback to today if not provided
+      const attendanceDate = selectedDate ? createLocalDate(selectedDate as string) : new Date();
+      
+      // Create ISO date string at midnight local time to avoid timezone issues
+      const year = attendanceDate.getFullYear();
+      const month = String(attendanceDate.getMonth() + 1).padStart(2, '0');
+      const day = String(attendanceDate.getDate()).padStart(2, '0');
+      const dateIso = `${year}-${month}-${day}T00:00:00.000Z`;
+      
       const classIdStr = (classId as string) || "";
 
       const records = students
@@ -105,7 +123,7 @@ export default function ClassStudentsScreen() {
 
       const resp = await API.attendance.markAttendanceBatch(records);
       if (resp.success) {
-        Alert.alert("Submitted", "Attendance submitted successfully.");
+        Alert.alert("Submitted", `Attendance submitted successfully for ${attendanceDate.toLocaleDateString()}.`);
       } else {
         Alert.alert("Submit failed", resp.message || "Unable to submit attendance");
       }
@@ -429,13 +447,20 @@ export default function ClassStudentsScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.safeArea}>
           <View style={[styles.header, { paddingTop: Math.max(15, insets.top + 15) }]}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.backButton}
               onPress={() => router.back()}
             >
               <ArrowLeft size={24} color="#1E40AF" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{resolvedClassName}</Text>
+            <Text style={styles.headerTitle}>
+              {resolvedClassName}
+              {selectedDate && (
+                <Text style={styles.dateSubtitle}>
+                  {'\n'}{createLocalDate(selectedDate as string).toLocaleDateString()}
+                </Text>
+              )}
+            </Text>
             <View style={styles.placeholder} />
           </View>
           
@@ -459,7 +484,14 @@ export default function ClassStudentsScreen() {
             >
               <ArrowLeft size={24} color="#1E40AF" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{className}</Text>
+            <Text style={styles.headerTitle}>
+              {className}
+              {selectedDate && (
+                <Text style={styles.dateSubtitle}>
+                  {'\n'}{createLocalDate(selectedDate as string).toLocaleDateString()}
+                </Text>
+              )}
+            </Text>
             <View style={styles.placeholder} />
           </View>
           
@@ -488,7 +520,14 @@ export default function ClassStudentsScreen() {
             <ArrowLeft size={24} color="#1E40AF" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{resolvedClassName}</Text>
+            <Text style={styles.headerTitle}>
+              {resolvedClassName}
+              {selectedDate && (
+                <Text style={styles.dateSubtitle}>
+                  {'\n'}{createLocalDate(selectedDate as string).toLocaleDateString()}
+                </Text>
+              )}
+            </Text>
             <Text style={styles.studentCount}>{studentCount} Students</Text>
           </View>
           <View style={styles.placeholder} />
@@ -660,6 +699,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     color: "#1E40AF",
+  },
+  dateSubtitle: {
+    fontSize: 14,
+    fontWeight: "400",
+    color: "#6B7280",
   },
   studentCount: {
     fontSize: 14,
