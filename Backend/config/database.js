@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 // Prefer env var, fallback to current hardcoded URI for now
-const MONGODB_URI = "mongodb+srv://sunandvemavarapu_db_user:wqr25yDcKahqsueS@attedence.mlkqvap.mongodb.net/";
+const MONGODB_URI = "mongodb+srv://sunandvemavarapu_db_user:6RfYz41QXJl1fRm2@empty4.wwtfxjx.mongodb.net/";
 
 
 
