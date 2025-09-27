@@ -3,9 +3,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Base API configuration
 const API_BASE_URL = __DEV__
-  ? "http://10.127.168.42:8000/api"
+  ? "http://10.179.89.143:8000/api"
   : "https://hack-backend-08d7.onrender.com/api"
-    "http://localhost:8000/api";
+    "http://192.168.1.10:8000/api";
 
 
 // API Response types
@@ -432,6 +432,37 @@ export const EmbeddingsAPI = {
     metadata?: any;
   }): Promise<ApiResponse<{ id: string; dims: number }>> {
     return apiRequest("/embeddings/image", {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
+  },
+
+  // Enroll multiple faces from a single image
+  async enrollMultipleFaces(options: {
+    imageBase64: string;
+    sourceId: string;
+    sourceType?: string;
+    metadata?: any;
+  }): Promise<ApiResponse<{ count: number; ids: string[]; dims: number }>> {
+    return apiRequest("/embeddings/multiple", {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
+  },
+
+  // Compare multiple faces in an image with stored embeddings
+  async compareMultipleFaces(options: {
+    imageBase64: string;
+    threshold?: number;
+    sourceType?: string;
+    verbose?: boolean;
+  }): Promise<ApiResponse<{ 
+    totalFaces: number; 
+    matchedCount: number; 
+    matchedStudentIds: string[];
+    detailedResults?: Array<{ faceIndex: number; matched: boolean; bestMatch?: any; threshold: number }>;
+  }>> {
+    return apiRequest("/embeddings/compare-multiple", {
       method: "POST",
       body: JSON.stringify(options),
     });

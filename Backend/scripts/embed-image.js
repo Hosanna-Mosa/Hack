@@ -10,7 +10,6 @@ try {
   console.log('Falling back to @tensorflow/tfjs (pure JS) backend');
 }
 const mobilenet = require('@tensorflow-models/mobilenet');
-
 const jpeg = require('jpeg-js');
 const { PNG } = require('pngjs');
 const connectDB = require('../config/database');
@@ -115,4 +114,5 @@ main().catch((err) => {
   console.error('Image embedding job failed:', err);
   process.exit(1);
 });
+
 

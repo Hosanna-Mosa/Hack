@@ -461,15 +461,21 @@ const [viewOpen, setViewOpen] = useState(false);
 						<Button onClick={async () => {
 							if (!teacherAssignClassId) return;
 							try {
-								await apiRequest(`/classes/${teacherAssignClassId}/teachers`, {
+								console.log('Assigning teachers to class:', teacherAssignClassId);
+								console.log('Selected teachers:', selectedTeachers);
+								
+								const response = await apiRequest(`/classes/${teacherAssignClassId}/teachers`, {
 									method: 'PUT',
 									body: JSON.stringify({ teacherIds: selectedTeachers })
 								});
+								
+								console.log('Teacher assignment response:', response);
 								toast({ title: 'Success', description: 'Teachers assigned successfully' });
 								setTeacherAssignOpen(false);
 								// Refresh classes data
 								fetchData();
 							} catch (e: any) {
+								console.error('Teacher assignment error:', e);
 								toast({ title: 'Failed to assign teachers', description: e.message });
 							}
 						}}>Save Changes</Button>

@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft, User } from "lucide-react-native";
+import { ArrowLeft, User, Camera } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { API, TeacherAPI } from "../lib/api";
@@ -61,6 +61,9 @@ export default function ClassStudentsScreen() {
 
   // Face recognition loading state
   const [faceRecognitionLoading, setFaceRecognitionLoading] = useState(false);
+  
+  // Multiple faces processing state
+  const [multipleFacesLoading, setMultipleFacesLoading] = useState(false);
 
   const openActions = (student: Student) => {
     setSelectedStudent(student);
@@ -242,6 +245,79 @@ export default function ClassStudentsScreen() {
       Alert.alert("Camera Error", "Unable to open camera. Try again on a real device.");
       setFaceRecognitionLoading(false);
       return false;
+    }
+  };
+
+  const handleMultipleFacesCapture = async () => {
+    try {
+      setMultipleFacesLoading(true);
+      
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission required", "Please allow camera access to continue.");
+        setMultipleFacesLoading(false);
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.7,
+        cameraType: ImagePicker.CameraType.back, // Use back camera for multiple faces
+      });
+
+      if (result.canceled) {
+        setMultipleFacesLoading(false);
+        return;
+      }
+
+      const asset = result.assets?.[0];
+      if (!asset) {
+        setMultipleFacesLoading(false);
+        return;
+      }
+
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.Base64 });
+
+      // Compare multiple faces with stored embeddings
+      const compareResult = await API.embeddings.compareMultipleFaces({
+        imageBase64: base64,
+        sourceType: "student-face",
+        threshold: 0.3,
+      });
+
+      if (compareResult.success && compareResult.data) {
+        const { totalFaces, matchedCount, matchedStudentIds } = compareResult.data;
+        
+        // Mark matched students as present
+        matchedStudentIds.forEach((studentId) => {
+          const student = students.find(s => s.id === studentId);
+          if (student) {
+            markStudent(student.id, "present");
+          }
+        });
+
+        if (matchedCount > 0) {
+          Alert.alert(
+            "Multiple Faces Detected", 
+            `Found ${totalFaces} faces. ${matchedCount} students matched and marked present.`,
+            [{ text: "OK" }]
+          );
+        } else {
+          Alert.alert(
+            "No Matches Found", 
+            `Found ${totalFaces} faces but no matches with enrolled students.`,
+            [{ text: "OK" }]
+          );
+        }
+      } else {
+        Alert.alert("Error", "Failed to process multiple faces. Please try again.");
+      }
+    } catch (e) {
+      console.error("Multiple faces error:", e);
+      Alert.alert("Camera Error", "Unable to process multiple faces. Please try again.");
+    } finally {
+      setMultipleFacesLoading(false);
     }
   };
 
@@ -530,7 +606,13 @@ export default function ClassStudentsScreen() {
             </Text>
             <Text style={styles.studentCount}>{studentCount} Students</Text>
           </View>
-          <View style={styles.placeholder} />
+          <TouchableOpacity 
+            style={styles.multipleFacesButton}
+            onPress={handleMultipleFacesCapture}
+            disabled={multipleFacesLoading}
+          >
+            <Camera size={20} color="#1E40AF" />
+          </TouchableOpacity>
         </View>
         
         <FlatList
@@ -650,6 +732,22 @@ export default function ClassStudentsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Multiple Faces Processing Loading Modal */}
+      <Modal
+        transparent
+        animationType="fade"
+        visible={multipleFacesLoading}
+        onRequestClose={() => {}} // Prevent closing during processing
+      >
+        <View style={styles.loadingBackdrop}>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color="#1D4ED8" />
+            <Text style={styles.loadingTitle}>Processing Multiple Faces</Text>
+            <Text style={styles.loadingSubtext}>Please wait while we detect and match faces...</Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -712,6 +810,16 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 40,
+  },
+  multipleFacesButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
   },
   listContent: {
     padding: 20,

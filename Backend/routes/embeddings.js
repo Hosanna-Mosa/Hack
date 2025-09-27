@@ -50,6 +50,18 @@ router.post('/compare-stored', [
   handleValidationErrors
 ], auth, controller.compareStored);
 
+// Upsert multiple face embeddings from a single image
+router.post('/multiple', upload.single('image'), [
+  body('sourceId').notEmpty().withMessage('sourceId is required'),
+  handleValidationErrors
+], auth, authorize('admin', 'teacher'), controller.upsertMultipleEmbeddings);
+
+// Compare multiple faces in input image with stored embeddings
+router.post('/compare-multiple', upload.single('image'), [
+  body('threshold').optional().isFloat({ min: 0, max: 1 }),
+  handleValidationErrors
+], auth, controller.compareMultiple);
+
 module.exports = router;
 
 
