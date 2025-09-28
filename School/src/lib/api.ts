@@ -8,7 +8,7 @@ export interface ApiResponse<T = any> {
   token?: string;
 }
 
-const DEFAULT_BASE_URL = "http://localhost:8000/api";
+const DEFAULT_BASE_URL = "https://hack-i6v3.onrender.com/api";
 export const API_BASE_URL: string = (import.meta as any).env?.VITE_API_URL || DEFAULT_BASE_URL;
 
 function getToken(): string | null {
